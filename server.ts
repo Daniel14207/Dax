@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import Database from 'better-sqlite3';
+import cors from 'cors';
 
 const db = new Database('database.sqlite');
 
@@ -18,9 +19,17 @@ db.exec(`
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
+  app.use(cors({
+    origin: "*"
+  }));
   app.use(express.json());
+
+  // Test route
+  app.get('/api/test', (req, res) => {
+    res.json({ status: 'OK' });
+  });
 
   // API Routes
   app.post('/api/auth/register', (req, res) => {

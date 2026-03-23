@@ -15,7 +15,8 @@ export default function Admin({ onExit }: AdminProps) {
 
   const loadUsers = async () => {
     try {
-      const res = await fetch('/api/users');
+      const API_URL = import.meta.env.VITE_API_URL || "";
+      const res = await fetch(`${API_URL}/api/users`);
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
@@ -37,7 +38,8 @@ export default function Admin({ onExit }: AdminProps) {
     if (isNaN(amount) || amount <= 0) return;
 
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}/tokens`, {
+      const API_URL = import.meta.env.VITE_API_URL || "";
+      const res = await fetch(`${API_URL}/api/users/${selectedUser.id}/tokens`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount })
@@ -77,7 +79,8 @@ export default function Admin({ onExit }: AdminProps) {
     const newStatus = user.status === 'active' ? 'inactive' : 'active';
     
     try {
-      const res = await fetch(`/api/users/${userId}/status`, {
+      const API_URL = import.meta.env.VITE_API_URL || "";
+      const res = await fetch(`${API_URL}/api/users/${userId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })

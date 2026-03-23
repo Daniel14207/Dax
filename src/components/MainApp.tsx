@@ -25,7 +25,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
   useEffect(() => {
     const refreshUser = async () => {
       try {
-        const res = await fetch('/api/auth/login', {
+        const API_URL = import.meta.env.VITE_API_URL || "";
+        const res = await fetch(`${API_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: user.phone, password: user.password })
@@ -47,7 +48,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
 
   const handleAnalyze = async () => {
     try {
-      const res = await fetch(`/api/users/${user.id}/tokens`, {
+      const API_URL = import.meta.env.VITE_API_URL || "";
+      const res = await fetch(`${API_URL}/api/users/${user.id}/tokens`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: -1 })

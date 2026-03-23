@@ -30,8 +30,9 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
     }
 
     try {
+      const API_URL = import.meta.env.VITE_API_URL || "";
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const res = await fetch(endpoint, {
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, password })
@@ -51,7 +52,8 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
 
       onLogin(data);
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      console.error("Erreur serveur:", err);
+      setError('Connexion au serveur impossible');
     }
   };
 
