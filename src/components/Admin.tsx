@@ -13,54 +13,98 @@ export default function Admin({ onExit }: AdminProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [tokenAmount, setTokenAmount] = useState('');
 
-  const loadUsers = () => {
-    const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
-    setUsers(storedUsers);
+  const loadUsers = async () => {
+    try {
+      const res = await fetch('/api/users');
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement des clients", err);
+    }
   };
 
   useEffect(() => {
     loadUsers();
   }, []);
 
-  const handleSendTokens = (e: React.FormEvent) => {
+  const handleSendTokens = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser || !tokenAmount) return;
     
     const amount = parseInt(tokenAmount, 10);
     if (isNaN(amount) || amount <= 0) return;
 
-    const updatedUsers = users.map(u => {
-      if (u.id === selectedUser.id) {
-        return { ...u, tokens: u.tokens + amount };
+    try {
+      const res = await fetch(`/api/users/${selectedUser.id}/tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+
+      if (res.ok) {
+        // Update local state
+        const updatedUsers = users.map(u => {
+          if (u.id === selectedUser.id) {
+            return { ...u, tokens: u.tokens + amount };
+          }
+          return u;
+        });
+        setUsers(updatedUsers);
+        
+        // Update current user if they are logged in
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        if (currentUser && currentUser.id === selectedUser.id) {
+          localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, tokens: currentUser.tokens + amount }));
+        }
+
+        setSelectedUser(null);
+        setTokenAmount('');
+        alert('Tokens envoyés avec succès !');
+      } else {
+        alert('Erreur lors de l\'envoi des tokens');
       }
-      return u;
-    });
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    
-    // Also update current user if they are logged in
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    if (currentUser && currentUser.id === selectedUser.id) {
-      localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, tokens: currentUser.tokens + amount }));
+    } catch (err) {
+      alert('Erreur de connexion au serveur');
     }
-
-    setSelectedUser(null);
-    setTokenAmount('');
-    alert('Tokens envoyés avec succès !');
   };
 
-  const handleToggleStatus = (userId: string) => {
-    const updatedUsers = users.map(u => {
-      if (u.id === userId) {
-        return { ...u, status: u.status === 'active' ? 'inactive' : 'active' };
+  const handleToggleStatus = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    
+    const newStatus = user.status === 'active' ? 'inactive' : 'active';
+    
+    try {
+      const res = await fetch(`/api/users/${userId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (res.ok) {
+        const updatedUsers = users.map(u => {
+          if (u.id === userId) {
+            return { ...u, status: newStatus };
+          }
+          return u;
+        });
+        setUsers(updatedUsers);
       }
-      return u;
-    });
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    } catch (err) {
+      console.error("Erreur lors de la modification du statut", err);
+    }
   };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 20;
 
   const filteredUsers = users.filter(u => u.phone.includes(searchTerm) || u.id.includes(searchTerm));
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white flex flex-col relative">
@@ -80,17 +124,20 @@ export default function Admin({ onExit }: AdminProps) {
           <input 
             type="text" 
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on search
+            }}
             placeholder="Rechercher par numéro ou ID..."
             className="w-full bg-[#1e293b] border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#2dd4bf]"
           />
         </div>
 
         <div className="space-y-4">
-          {filteredUsers.length === 0 ? (
+          {currentUsers.length === 0 ? (
             <div className="text-center text-slate-500 py-10">Aucun client trouvé</div>
           ) : (
-            filteredUsers.map(user => (
+            currentUsers.map(user => (
               <div 
                 key={user.id} 
                 className="bg-[#1e293b] rounded-xl p-4 border border-slate-800 flex flex-col gap-4 cursor-pointer hover:border-amber-500/50 transition-colors"
@@ -141,6 +188,28 @@ export default function Admin({ onExit }: AdminProps) {
             ))
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-6 mb-4">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-50 hover:bg-slate-700 transition-colors"
+            >
+              Précédent
+            </button>
+            <span className="text-slate-400">
+              Page {currentPage} sur {totalPages}
+            </span>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-50 hover:bg-slate-700 transition-colors"
+            >
+              Suivant
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedUser && (

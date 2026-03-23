@@ -23,33 +23,43 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
 
   // Refresh user data periodically to get latest tokens
   useEffect(() => {
-    const refreshUser = () => {
-      const users: User[] = JSON.parse(localStorage.getItem('users') || '[]');
-      const updatedUser = users.find(u => u.id === user.id);
-      if (updatedUser) {
-        setUser(updatedUser);
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    const refreshUser = async () => {
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: user.phone, password: user.password })
+        });
+        if (res.ok) {
+          const updatedUser = await res.json();
+          setUser(updatedUser);
+          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        }
+      } catch (err) {
+        console.error('Failed to refresh user data', err);
       }
     };
     
     refreshUser();
-    const interval = setInterval(refreshUser, 2000);
+    const interval = setInterval(refreshUser, 5000); // 5 seconds is better than 2 for API
     return () => clearInterval(interval);
-  }, [user.id]);
+  }, [user.id, user.phone, user.password]);
 
-  const handleAnalyze = () => {
-    const users: User[] = JSON.parse(localStorage.getItem('users') || '[]');
-    const updatedUsers = users.map(u => {
-      if (u.id === user.id) {
-        return { ...u, tokens: u.tokens - 1 };
+  const handleAnalyze = async () => {
+    try {
+      const res = await fetch(`/api/users/${user.id}/tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: -1 })
+      });
+      if (res.ok) {
+        const updatedUser = { ...user, tokens: user.tokens - 1 };
+        setUser(updatedUser);
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
       }
-      return u;
-    });
-    
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    const updatedUser = updatedUsers.find(u => u.id === user.id)!;
-    setUser(updatedUser);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    } catch (err) {
+      console.error('Failed to deduct token', err);
+    }
   };
 
   const [showAdminModal, setShowAdminModal] = useState(false);

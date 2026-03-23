@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User } from './types';
 import { Lock, Phone, UserPlus, LogIn, ShieldAlert } from 'lucide-react';
 
 interface AuthProps {
@@ -15,7 +15,7 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminCode, setAdminCode] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -29,36 +29,29 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
       return;
     }
 
-    const users: User[] = JSON.parse(localStorage.getItem('users') || '[]');
+    try {
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      });
 
-    if (isLogin) {
-      const user = users.find(u => u.phone === phone && u.password === password);
-      if (user) {
-        if (user.status === 'inactive') {
-          setError('Compte inactif. Veuillez contacter l\'administrateur.');
-        } else {
-          onLogin(user);
-        }
-      } else {
-        setError('Numéro ou mot de passe incorrect');
-      }
-    } else {
-      if (users.some(u => u.phone === phone)) {
-        setError('Ce numéro est déjà utilisé');
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Une erreur est survenue');
         return;
       }
-      
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        phone,
-        password,
-        tokens: 0,
-        status: 'active'
-      };
-      
-      users.push(newUser);
-      localStorage.setItem('users', JSON.stringify(users));
-      onLogin(newUser);
+
+      if (data.status === 'inactive') {
+        setError('Compte inactif. Veuillez contacter l\'administrateur.');
+        return;
+      }
+
+      onLogin(data);
+    } catch (err) {
+      setError('Erreur de connexion au serveur');
     }
   };
 

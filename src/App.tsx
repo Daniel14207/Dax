@@ -16,7 +16,23 @@ export default function App() {
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
+      const user = JSON.parse(storedUser);
+      setCurrentUser(user);
+      
+      // Refresh user data from server
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: user.phone, password: user.password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setCurrentUser(data);
+          localStorage.setItem('currentUser', JSON.stringify(data));
+        }
+      })
+      .catch(err => console.error('Failed to refresh user data', err));
     }
   }, []);
 
