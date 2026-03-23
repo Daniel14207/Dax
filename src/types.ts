@@ -43,6 +43,8 @@ export interface VirtualAnalysisResult {
   time: string;
   homeTeam: string;
   awayTeam: string;
+  isHotMatch?: boolean;
+  confidence?: number;
   results: {
     ft1x2: string;
     ht1x2: string;

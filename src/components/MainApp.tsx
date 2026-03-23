@@ -52,16 +52,22 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     localStorage.setItem('currentUser', JSON.stringify(updatedUser));
   };
 
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
+
   const handleBuyTokens = (amount: number, duration: string) => {
     window.location.href = `tel:+261342594678`;
   };
 
-  const handleAdminClick = () => {
-    const code = prompt('Code Admin:');
-    if (code === '@9729') {
+  const handleAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminCode === '9729') {
       onAdminAccess();
-    } else if (code !== null) {
+      setShowAdminModal(false);
+      setAdminCode('');
+    } else {
       alert('Code incorrect');
+      setAdminCode('');
     }
   };
 
@@ -108,11 +114,53 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     );
   };
 
+  const generateOdds = (leagueId: string, homeTeam: string, awayTeam: string) => {
+    const isAfricaCup = leagueId === 'afr';
+    const specialTeams = ['Sudan', 'Benin', 'Equatorial Guinea'];
+    
+    let homeOdd = 0;
+    let awayOdd = 0;
+    let drawOdd = Number((Math.random() * 2 + 2.5).toFixed(2)); // 2.50 - 4.50
+
+    // Special Africa Cup logic
+    if (isAfricaCup && (specialTeams.includes(homeTeam) || specialTeams.includes(awayTeam))) {
+      const isRare = Math.random() > 0.8; // 20% chance for rare odds
+      if (isRare) {
+        const veryRare = Math.random() > 0.9; // 10% of rare are very rare (98, 100)
+        const highOdd = veryRare ? (Math.random() > 0.5 ? 98 : 100) : Number((Math.random() * 15 + 10).toFixed(2)); // 10.00 - 25.00
+        
+        if (specialTeams.includes(homeTeam)) {
+          homeOdd = highOdd;
+          awayOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
+        } else {
+          awayOdd = highOdd;
+          homeOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2));
+        }
+        return { home: homeOdd, draw: drawOdd, away: awayOdd };
+      }
+    }
+
+    // Normal realistic odds
+    const type = Math.random();
+    if (type > 0.6) {
+      // Home favorite
+      homeOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
+      awayOdd = Number((Math.random() * 15 + 5).toFixed(2)); // 5.00 - 20.00
+    } else if (type > 0.2) {
+      // Away favorite
+      awayOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2));
+      homeOdd = Number((Math.random() * 15 + 5).toFixed(2));
+    } else {
+      // Balanced
+      homeOdd = Number((Math.random() * 2.5 + 2.5).toFixed(2)); // 2.50 - 5.00
+      awayOdd = Number((Math.random() * 2.5 + 2.5).toFixed(2));
+    }
+
+    return { home: homeOdd, draw: drawOdd, away: awayOdd };
+  };
+
   const renderLeagues = () => {
     if (!virtualTime) return null;
-    
-    // Generate matches based on the current slot
-    // T = Result, T+2 = Prediction, T+4 = Prediction
     
     return (
       <div className="space-y-6">
@@ -124,24 +172,28 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             </div>
             
             <div className="divide-y divide-slate-800/50">
-              {/* Generate 3 matches for the current view: T, T+2, T+4 */}
-              {[0, 1, 2].map(offset => {
+              {[-2, -1, 0].map(offset => {
                 const slotIndex = virtualTime.currentSlotIndex + offset;
-                if (slotIndex >= 20) return null; // Don't show beyond cycle
+                if (slotIndex < 0 || slotIndex >= 20) return null;
                 
                 const slot = virtualTime.slots[slotIndex];
                 if (!slot) return null;
                 
-                // Pick random teams based on league (mocking this for now)
                 const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
                 if (teamNames.length === 0) return null;
 
-                const homeTeam = teamNames[(slotIndex * 3 + offset) % teamNames.length];
+                const homeTeam = teamNames[(slotIndex * 3 + offset + 10) % teamNames.length];
                 const awayTeam = teamNames[(slotIndex * 5 + offset + 1) % teamNames.length];
                 const finalAwayTeam = homeTeam === awayTeam ? teamNames[(slotIndex * 7 + offset + 2) % teamNames.length] : awayTeam;
                 
-                const isResult = offset === 0; // T
-                const isPrediction = offset > 0; // T+2, T+4
+                const isResult = offset < 0;
+                const isUpcoming = offset === 0;
+                const odds = generateOdds(league.id, homeTeam, finalAwayTeam);
+                
+                // Deterministic score based on slot and teams
+                const scoreSeed = slotIndex * homeTeam.length * finalAwayTeam.length;
+                const homeScore = scoreSeed % 4;
+                const awayScore = (scoreSeed / 2) % 4 | 0;
                 
                 return (
                   <div key={offset} className="p-4">
@@ -151,7 +203,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                         <span>{slot.time}</span>
                       </div>
                       {isResult && <span className="text-xs font-bold text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded">Résultat</span>}
-                      {isPrediction && <span className="text-xs font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-2 py-1 rounded">Prédiction</span>}
+                      {isUpcoming && <span className="text-xs font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-2 py-1 rounded animate-pulse">Live / Upcoming</span>}
                     </div>
                     
                     <div className="flex justify-between items-center">
@@ -163,7 +215,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                       <div className="px-4 flex flex-col items-center justify-center">
                         {isResult ? (
                           <div className="text-2xl font-black text-white tracking-widest bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
-                            {Math.floor(Math.random() * 4)} - {Math.floor(Math.random() * 4)}
+                            {homeScore} - {awayScore}
                           </div>
                         ) : (
                           <div className="text-slate-500 font-bold text-sm bg-slate-800 px-3 py-1 rounded-full">VS</div>
@@ -176,12 +228,20 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                       </div>
                     </div>
                     
-                    {isPrediction && (
-                      <div className="mt-4 bg-slate-800/50 rounded-lg p-3 flex justify-between items-center border border-slate-700/50">
-                        <span className="text-slate-400 text-sm">Pronostic recommandé:</span>
-                        <span className="font-bold text-[#eab308]">
-                          {['1X', 'Over 1.5', 'Home Win', 'BTTS'][Math.floor(Math.random() * 4)]}
-                        </span>
+                    {isUpcoming && (
+                      <div className="mt-4 grid grid-cols-3 gap-2">
+                        <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors cursor-pointer">
+                          <span className="text-xs text-slate-400 mb-1">1</span>
+                          <span className="font-bold text-[#eab308]">{odds.home.toFixed(2)}</span>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors cursor-pointer">
+                          <span className="text-xs text-slate-400 mb-1">X</span>
+                          <span className="font-bold text-[#eab308]">{odds.draw.toFixed(2)}</span>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors cursor-pointer">
+                          <span className="text-xs text-slate-400 mb-1">2</span>
+                          <span className="font-bold text-[#eab308]">{odds.away.toFixed(2)}</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -247,7 +307,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 <span className="font-medium">Aviator System</span>
               </button>
               <div className="my-4 border-t border-slate-700"></div>
-              <button onClick={handleAdminClick} className="w-full flex items-center gap-3 px-4 py-3 text-amber-400 hover:bg-amber-400/10 rounded-lg transition-colors">
+              <button onClick={() => setShowAdminModal(true)} className="w-full flex items-center gap-3 px-4 py-3 text-amber-400 hover:bg-amber-400/10 rounded-lg transition-colors">
                 <ShieldAlert className="w-5 h-5" />
                 <span className="font-medium">Admin Panel</span>
               </button>
@@ -258,6 +318,46 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 <span>Déconnexion</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Modal */}
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#1e293b] rounded-xl p-6 w-full max-w-sm border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <ShieldAlert className="w-6 h-6 text-amber-500" />
+              Accès Administrateur
+            </h2>
+            <form onSubmit={handleAdminSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-400 mb-1">Code d'accès</label>
+                <input
+                  type="password"
+                  value={adminCode}
+                  onChange={(e) => setAdminCode(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-amber-500"
+                  placeholder="••••"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAdminModal(false)}
+                  className="flex-1 py-2 rounded-lg font-medium bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-lg font-bold bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors"
+                >
+                  Valider
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

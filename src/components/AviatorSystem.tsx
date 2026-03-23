@@ -15,16 +15,13 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
 
   const handleAnalyze = () => {
     if (userTokens <= 0) {
-      alert('❌ Analyse bloquée : Vous n\'avez pas assez de tokens.');
+      alert('Tokens insuffisants');
       return;
     }
     if (!historyText.trim() || !startTime.trim()) {
       alert('Veuillez remplir l\'historique et l\'heure de départ.');
       return;
     }
-
-    const confirm = window.confirm('Cette analyse coûte 1 token. Voulez-vous continuer ?');
-    if (!confirm) return;
 
     onAnalyze(); // Deduct token
     setIsAnalyzing(true);
@@ -41,17 +38,46 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
       
       // Generate for 4 hours (240 minutes)
       for (let i = 0; i < 240; i++) {
-        const timeStr = `${currentH.toString().padStart(2, '0')}:${currentM.toString().padStart(2, '0')}`;
+        const randomSeconds = Math.floor(Math.random() * 60);
+        const timeStr = `${currentH.toString().padStart(2, '0')}:${currentM.toString().padStart(2, '0')}:${randomSeconds.toString().padStart(2, '0')}`;
         
         // Pause logic: if time is 22:30 to 22:34, skip generation but increment time
         if (currentH === 22 && currentM >= 30 && currentM < 35) {
           // Pause 5 mins
         } else {
+          // Generate realistic multipliers
+          let m1 = 0;
+          let m2 = 0;
+          let risk = 0;
+          
+          const rand = Math.random();
+          if (rand < 0.5) {
+            // 50% chance of 1.00 - 1.99
+            m1 = Number((Math.random() * 0.99 + 1.00).toFixed(2));
+            m2 = Number((Math.random() * 0.99 + 1.00).toFixed(2));
+            risk = Number((Math.random() * 2 + 1).toFixed(2));
+          } else if (rand < 0.8) {
+            // 30% chance of 2.00 - 4.99
+            m1 = Number((Math.random() * 2.99 + 2.00).toFixed(2));
+            m2 = Number((Math.random() * 2.99 + 2.00).toFixed(2));
+            risk = Number((Math.random() * 5 + 3).toFixed(2));
+          } else if (rand < 0.95) {
+            // 15% chance of 5.00 - 49.99
+            m1 = Number((Math.random() * 44.99 + 5.00).toFixed(2));
+            m2 = Number((Math.random() * 44.99 + 5.00).toFixed(2));
+            risk = Number((Math.random() * 20 + 10).toFixed(2));
+          } else {
+            // 5% chance of 50+
+            m1 = Number((Math.random() * 50 + 50.00).toFixed(2));
+            m2 = Number((Math.random() * 50 + 50.00).toFixed(2));
+            risk = Number((Math.random() * 50 + 50).toFixed(2));
+          }
+
           generatedRounds.push({
             time: timeStr,
-            multiplier1: Number((Math.random() * 5 + 1).toFixed(2)),
-            multiplier2: Number((Math.random() * 3 + 1).toFixed(2)),
-            risk: Number((Math.random() * 10 + 2).toFixed(2))
+            multiplier1: m1,
+            multiplier2: m2,
+            risk: risk
           });
         }
         
@@ -78,6 +104,14 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
     if (saved) setRounds(JSON.parse(saved));
   }, []);
 
+  const getColorClass = (multiplier: number) => {
+    if (multiplier >= 1.00 && multiplier <= 1.99) return 'text-blue-500';
+    if (multiplier >= 2.00 && multiplier <= 4.99) return 'text-purple-500';
+    if (multiplier >= 5.00 && multiplier <= 49.99) return 'text-red-500';
+    if (multiplier >= 50) return 'text-green-500';
+    return 'text-slate-300';
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
@@ -101,11 +135,15 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
         </div>
         <button 
           onClick={handleAnalyze}
-          disabled={isAnalyzing}
-          className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isAnalyzing || userTokens <= 0}
+          className={`w-full font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+            userTokens <= 0 
+              ? 'bg-red-500/20 text-red-400 border border-red-500/50' 
+              : 'bg-red-500 hover:bg-red-600 text-white'
+          }`}
         >
-          {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-          {isAnalyzing ? 'Analyse en cours (5s)...' : 'Générer les prédictions (1 Token)'}
+          {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens <= 0 ? null : <Search className="w-5 h-5" />}
+          {isAnalyzing ? 'Analyse en cours (5s)...' : userTokens <= 0 ? 'Tokens insuffisants' : 'Générer les prédictions (1 Token)'}
         </button>
       </div>
 
@@ -129,9 +167,9 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
               {rounds.map((round, idx) => (
                 <div key={idx} className="grid grid-cols-4 p-3 border-b border-slate-800/50 text-sm items-center hover:bg-slate-800/30 transition-colors">
                   <div className="font-mono text-slate-300">{round.time}</div>
-                  <div className="text-center font-bold text-[#2dd4bf]">{round.multiplier1.toFixed(2)}x</div>
-                  <div className="text-center font-bold text-[#eab308]">{round.multiplier2.toFixed(2)}x</div>
-                  <div className="text-right font-bold text-red-400">{round.risk.toFixed(2)}x</div>
+                  <div className={`text-center font-bold ${getColorClass(round.multiplier1)}`}>{round.multiplier1.toFixed(2)}x</div>
+                  <div className={`text-center font-bold ${getColorClass(round.multiplier2)}`}>{round.multiplier2.toFixed(2)}x</div>
+                  <div className={`text-right font-bold ${getColorClass(round.risk)}`}>{round.risk.toFixed(2)}x</div>
                 </div>
               ))}
             </div>

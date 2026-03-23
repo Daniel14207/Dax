@@ -12,6 +12,8 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,17 +62,20 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
     }
   };
 
-  const handleAdminClick = () => {
-    const code = prompt('Code Admin:');
-    if (code === '@9729') {
+  const handleAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminCode === '9729') {
       onAdminAccess();
-    } else if (code !== null) {
+      setShowAdminModal(false);
+      setAdminCode('');
+    } else {
       alert('Code incorrect');
+      setAdminCode('');
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] flex flex-col justify-center items-center p-4 text-white">
+    <div className="min-h-screen bg-[#0f172a] flex flex-col justify-center items-center p-4 text-white relative">
       <div className="w-full max-w-md bg-[#1e293b] rounded-2xl shadow-xl overflow-hidden">
         <div className="p-6 bg-[#2dd4bf] text-center">
           <h1 className="text-3xl font-bold text-slate-900">Betting Tips</h1>
@@ -137,12 +142,51 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
       </div>
 
       <button 
-        onClick={handleAdminClick}
+        onClick={() => setShowAdminModal(true)}
         className="mt-8 flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors"
       >
         <ShieldAlert className="w-4 h-4" />
         Accès Admin
       </button>
+
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#1e293b] rounded-xl p-6 w-full max-w-sm border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <ShieldAlert className="w-6 h-6 text-amber-500" />
+              Accès Administrateur
+            </h2>
+            <form onSubmit={handleAdminSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-400 mb-1">Code d'accès</label>
+                <input
+                  type="password"
+                  value={adminCode}
+                  onChange={(e) => setAdminCode(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-amber-500"
+                  placeholder="••••"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAdminModal(false)}
+                  className="flex-1 py-2 rounded-lg font-medium bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-lg font-bold bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors"
+                >
+                  Valider
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

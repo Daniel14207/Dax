@@ -10,6 +10,9 @@ export default function Admin({ onExit }: AdminProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [tokenAmount, setTokenAmount] = useState('');
+
   const loadUsers = () => {
     const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
     setUsers(storedUsers);
@@ -19,9 +22,15 @@ export default function Admin({ onExit }: AdminProps) {
     loadUsers();
   }, []);
 
-  const handleAddTokens = (userId: string, amount: number) => {
+  const handleSendTokens = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser || !tokenAmount) return;
+    
+    const amount = parseInt(tokenAmount, 10);
+    if (isNaN(amount) || amount <= 0) return;
+
     const updatedUsers = users.map(u => {
-      if (u.id === userId) {
+      if (u.id === selectedUser.id) {
         return { ...u, tokens: u.tokens + amount };
       }
       return u;
@@ -31,9 +40,13 @@ export default function Admin({ onExit }: AdminProps) {
     
     // Also update current user if they are logged in
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    if (currentUser && currentUser.id === userId) {
+    if (currentUser && currentUser.id === selectedUser.id) {
       localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, tokens: currentUser.tokens + amount }));
     }
+
+    setSelectedUser(null);
+    setTokenAmount('');
+    alert('Tokens envoyés avec succès !');
   };
 
   const handleToggleStatus = (userId: string) => {
@@ -50,7 +63,7 @@ export default function Admin({ onExit }: AdminProps) {
   const filteredUsers = users.filter(u => u.phone.includes(searchTerm) || u.id.includes(searchTerm));
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col">
+    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col relative">
       <div className="bg-[#1e293b] p-4 flex items-center gap-4 sticky top-0 z-10 shadow-md">
         <button onClick={onExit} className="p-2 hover:bg-slate-700 rounded-full transition-colors">
           <ArrowLeft className="w-6 h-6" />
@@ -78,7 +91,11 @@ export default function Admin({ onExit }: AdminProps) {
             <div className="text-center text-slate-500 py-10">Aucun client trouvé</div>
           ) : (
             filteredUsers.map(user => (
-              <div key={user.id} className="bg-[#1e293b] rounded-xl p-4 border border-slate-800 flex flex-col gap-4">
+              <div 
+                key={user.id} 
+                className="bg-[#1e293b] rounded-xl p-4 border border-slate-800 flex flex-col gap-4 cursor-pointer hover:border-amber-500/50 transition-colors"
+                onClick={() => setSelectedUser(user)}
+              >
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="font-bold text-lg">{user.phone}</div>
@@ -95,30 +112,22 @@ export default function Admin({ onExit }: AdminProps) {
                     <span className="font-bold text-lg">{user.tokens}</span>
                     <span className="text-slate-400 text-sm">Tokens</span>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleAddTokens(user.id, 1)}
-                      className="bg-slate-700 hover:bg-slate-600 w-8 h-8 rounded flex items-center justify-center font-bold transition-colors"
-                    >
-                      +1
-                    </button>
-                    <button 
-                      onClick={() => handleAddTokens(user.id, 5)}
-                      className="bg-slate-700 hover:bg-slate-600 w-8 h-8 rounded flex items-center justify-center font-bold transition-colors"
-                    >
-                      +5
-                    </button>
-                    <button 
-                      onClick={() => handleAddTokens(user.id, 10)}
-                      className="bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 w-10 h-8 rounded flex items-center justify-center font-bold transition-colors"
-                    >
-                      +10
-                    </button>
-                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedUser(user);
+                    }}
+                    className="bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 px-4 py-2 rounded-lg font-bold transition-colors text-sm"
+                  >
+                    ENVOYER TOKENS
+                  </button>
                 </div>
 
                 <button 
-                  onClick={() => handleToggleStatus(user.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleStatus(user.id);
+                  }}
                   className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
                     user.status === 'active' 
                       ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' 
@@ -133,6 +142,52 @@ export default function Admin({ onExit }: AdminProps) {
           )}
         </div>
       </div>
+
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#1e293b] rounded-xl p-6 w-full max-w-sm border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-2">Envoyer des Tokens</h2>
+            <p className="text-slate-400 text-sm mb-6">Client: <span className="text-white font-bold">{selectedUser.phone}</span></p>
+            
+            <form onSubmit={handleSendTokens}>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-400 mb-2">Nombre de tokens</label>
+                <div className="relative">
+                  <Coins className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-500 w-5 h-5" />
+                  <input
+                    type="number"
+                    min="1"
+                    value={tokenAmount}
+                    onChange={(e) => setTokenAmount(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-amber-500 text-lg font-bold"
+                    placeholder="Ex: 10"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setTokenAmount('');
+                  }}
+                  className="flex-1 py-3 rounded-lg font-medium bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={!tokenAmount}
+                  className="flex-1 py-3 rounded-lg font-bold bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ENVOYER
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
