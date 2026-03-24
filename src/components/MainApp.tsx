@@ -5,6 +5,7 @@ import { LEAGUES, TEAMS_BY_LEAGUE, getTeamLogo } from '../data';
 import { useVirtualTime } from '../hooks/useVirtualTime';
 import VirtualAnalysis from './VirtualAnalysis';
 import AviatorSystem from './AviatorSystem';
+import { MatchDetailsModal } from './MatchDetailsModal';
 
 interface MainAppProps {
   user: User;
@@ -18,6 +19,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
   const [unlockedMatches, setUnlockedMatches] = useState<string[]>([]);
   const [showMenu, setShowMenu] = useState(false);
   const [showCart, setShowCart] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<any>(null);
   
   const virtualTime = useVirtualTime();
 
@@ -178,39 +180,58 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               <h3 className="font-bold text-white text-lg">{league.name}</h3>
             </div>
             
-            <div className="divide-y divide-slate-800/50">
-              {[-2, -1, 0].map(offset => {
-                const slotIndex = virtualTime.currentSlotIndex + offset;
-                if (slotIndex < 0 || slotIndex >= 20) return null;
-                
-                const slot = virtualTime.slots[slotIndex];
-                if (!slot) return null;
-                
+            <div className="divide-y divide-slate-800/50 max-h-[600px] overflow-y-auto">
+              {virtualTime.slots.map((slot, slotIndex) => {
                 const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
                 if (teamNames.length === 0) return null;
 
-                const homeTeam = teamNames[(slotIndex * 3 + offset + 10) % teamNames.length];
-                const awayTeam = teamNames[(slotIndex * 5 + offset + 1) % teamNames.length];
-                const finalAwayTeam = homeTeam === awayTeam ? teamNames[(slotIndex * 7 + offset + 2) % teamNames.length] : awayTeam;
+                // Use cycleStartMinutes to ensure teams shuffle each cycle
+                const cycleSeed = virtualTime.cycleStartMinutes;
+                const homeTeam = teamNames[(slotIndex * 3 + cycleSeed + 10) % teamNames.length];
+                const awayTeam = teamNames[(slotIndex * 5 + cycleSeed + 1) % teamNames.length];
+                const finalAwayTeam = homeTeam === awayTeam ? teamNames[(slotIndex * 7 + cycleSeed + 2) % teamNames.length] : awayTeam;
                 
-                const isResult = offset < 0;
-                const isUpcoming = offset === 0;
+                const isResult = slot.isPast;
+                const isLive = slot.isCurrent;
+                const isFuture = slot.isFuture;
                 const odds = generateOdds(league.id, homeTeam, finalAwayTeam);
                 
                 // Deterministic score based on slot and teams
-                const scoreSeed = slotIndex * homeTeam.length * finalAwayTeam.length;
+                const scoreSeed = slotIndex * homeTeam.length * finalAwayTeam.length + cycleSeed;
                 const homeScore = scoreSeed % 4;
                 const awayScore = (scoreSeed / 2) % 4 | 0;
                 
+                const confidence = 65 + (scoreSeed % 30); // 65% to 94%
+                const isHotMatch = scoreSeed % 5 === 0; // 20% chance
+                
                 return (
-                  <div key={offset} className="p-4">
+                  <div 
+                    key={slotIndex} 
+                    className={`p-4 hover:bg-slate-800/30 transition-colors cursor-pointer relative overflow-hidden ${isHotMatch ? 'border-l-4 border-[#eab308]' : ''}`}
+                    onClick={() => setSelectedMatch({
+                      league, homeTeam, awayTeam: finalAwayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed
+                    })}
+                  >
+                    {isHotMatch && (
+                      <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg shadow-lg flex items-center gap-1">
+                        <Flame className="w-3 h-3" /> HOT MATCH
+                      </div>
+                    )}
                     <div className="flex justify-between items-center mb-3">
                       <div className="flex items-center gap-2 text-xs font-medium bg-slate-800 px-2 py-1 rounded text-slate-300">
                         <Clock className="w-3 h-3 text-[#eab308]" />
                         <span>{slot.time}</span>
                       </div>
-                      {isResult && <span className="text-xs font-bold text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded">Résultat</span>}
-                      {isUpcoming && <span className="text-xs font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-2 py-1 rounded animate-pulse">Live / Upcoming</span>}
+                      <div className="flex items-center gap-2">
+                        {isFuture && (
+                          <span className="text-xs font-bold text-slate-400 bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                            Confiance: <span className={confidence > 85 ? 'text-green-400' : 'text-amber-400'}>{confidence}%</span>
+                          </span>
+                        )}
+                        {isResult && <span className="text-xs font-bold text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded">Résultat</span>}
+                        {isLive && <span className="text-xs font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-2 py-1 rounded animate-pulse">Live</span>}
+                        {isFuture && <span className="text-xs font-bold text-slate-400 uppercase bg-slate-800 px-2 py-1 rounded">À venir</span>}
+                      </div>
                     </div>
                     
                     <div className="flex justify-between items-center">
@@ -235,22 +256,20 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                       </div>
                     </div>
                     
-                    {isUpcoming && (
-                      <div className="mt-4 grid grid-cols-3 gap-2">
-                        <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors cursor-pointer">
-                          <span className="text-xs text-slate-400 mb-1">1</span>
-                          <span className="font-bold text-[#eab308]">{odds.home.toFixed(2)}</span>
-                        </div>
-                        <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors cursor-pointer">
-                          <span className="text-xs text-slate-400 mb-1">X</span>
-                          <span className="font-bold text-[#eab308]">{odds.draw.toFixed(2)}</span>
-                        </div>
-                        <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors cursor-pointer">
-                          <span className="text-xs text-slate-400 mb-1">2</span>
-                          <span className="font-bold text-[#eab308]">{odds.away.toFixed(2)}</span>
-                        </div>
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-xs text-slate-400 mb-1">1</span>
+                        <span className="font-bold text-[#eab308]">{odds.home.toFixed(2)}</span>
                       </div>
-                    )}
+                      <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-xs text-slate-400 mb-1">X</span>
+                        <span className="font-bold text-[#eab308]">{odds.draw.toFixed(2)}</span>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-xs text-slate-400 mb-1">2</span>
+                        <span className="font-bold text-[#eab308]">{odds.away.toFixed(2)}</span>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -459,6 +478,14 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
           <span className="text-[10px] font-bold uppercase">More</span>
         </button>
       </nav>
+
+      {/* Match Details Modal */}
+      {selectedMatch && (
+        <MatchDetailsModal 
+          match={selectedMatch} 
+          onClose={() => setSelectedMatch(null)} 
+        />
+      )}
     </div>
   );
 }
