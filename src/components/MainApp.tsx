@@ -207,67 +207,67 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 return (
                   <div 
                     key={slotIndex} 
-                    className={`p-4 hover:bg-slate-800/30 transition-colors cursor-pointer relative overflow-hidden ${isHotMatch ? 'border-l-4 border-[#eab308]' : ''}`}
+                    className={`p-3 hover:bg-slate-800/30 transition-colors cursor-pointer relative overflow-hidden ${isHotMatch ? 'border-l-4 border-[#eab308]' : ''}`}
                     onClick={() => setSelectedMatch({
                       league, homeTeam, awayTeam: finalAwayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed
                     })}
                   >
                     {isHotMatch && (
-                      <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg shadow-lg flex items-center gap-1">
-                        <Flame className="w-3 h-3" /> HOT MATCH
+                      <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg shadow-lg flex items-center gap-1">
+                        <Flame className="w-2.5 h-2.5" /> HOT
                       </div>
                     )}
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center gap-2 text-xs font-medium bg-slate-800 px-2 py-1 rounded text-slate-300">
-                        <Clock className="w-3 h-3 text-[#eab308]" />
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-1.5 text-[10px] font-medium bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">
+                        <Clock className="w-2.5 h-2.5 text-[#eab308]" />
                         <span>{slot.time}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {isFuture && (
-                          <span className="text-xs font-bold text-slate-400 bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
                             Confiance: <span className={confidence > 85 ? 'text-green-400' : 'text-amber-400'}>{confidence}%</span>
                           </span>
                         )}
-                        {isResult && <span className="text-xs font-bold text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded">Résultat</span>}
-                        {isLive && <span className="text-xs font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-2 py-1 rounded animate-pulse">Live</span>}
-                        {isFuture && <span className="text-xs font-bold text-slate-400 uppercase bg-slate-800 px-2 py-1 rounded">À venir</span>}
+                        {isResult && <span className="text-[10px] font-bold text-red-400 uppercase bg-red-500/10 px-1.5 py-0.5 rounded">Résultat</span>}
+                        {isLive && <span className="text-[10px] font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-1.5 py-0.5 rounded animate-pulse">Live</span>}
+                        {isFuture && <span className="text-[10px] font-bold text-slate-400 uppercase bg-slate-800 px-1.5 py-0.5 rounded">À venir</span>}
                       </div>
                     </div>
                     
                     <div className="flex justify-between items-center">
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <img src={getTeamLogo(homeTeam, league.id)} alt={homeTeam} className="w-10 h-10 object-contain" />
-                        <span className="font-bold text-white text-sm text-center">{homeTeam}</span>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <img src={getTeamLogo(homeTeam, league.id)} alt={homeTeam} className="w-6 h-6 object-contain" />
+                        <span className="font-bold text-white text-[12px] text-center leading-tight">{homeTeam}</span>
                       </div>
                       
-                      <div className="px-4 flex flex-col items-center justify-center">
+                      <div className="px-2 flex flex-col items-center justify-center">
                         {isResult ? (
-                          <div className="text-2xl font-black text-white tracking-widest bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
+                          <div className="text-lg font-black text-white tracking-widest bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
                             {homeScore} - {awayScore}
                           </div>
                         ) : (
-                          <div className="text-slate-500 font-bold text-sm bg-slate-800 px-3 py-1 rounded-full">VS</div>
+                          <div className="text-slate-500 font-bold text-xs bg-slate-800 px-2 py-0.5 rounded-full">VS</div>
                         )}
                       </div>
                       
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <img src={getTeamLogo(finalAwayTeam, league.id)} alt={finalAwayTeam} className="w-10 h-10 object-contain" />
-                        <span className="font-bold text-white text-sm text-center">{finalAwayTeam}</span>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <img src={getTeamLogo(finalAwayTeam, league.id)} alt={finalAwayTeam} className="w-6 h-6 object-contain" />
+                        <span className="font-bold text-white text-[12px] text-center leading-tight">{finalAwayTeam}</span>
                       </div>
                     </div>
                     
-                    <div className="mt-4 grid grid-cols-3 gap-2">
-                      <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
-                        <span className="text-xs text-slate-400 mb-1">1</span>
-                        <span className="font-bold text-[#eab308]">{odds.home.toFixed(2)}</span>
+                    <div className="mt-2 grid grid-cols-3 gap-1.5">
+                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-[10px] text-slate-400 mb-0.5">1</span>
+                        <span className="font-bold text-[#eab308] text-sm">{odds.home.toFixed(2)}</span>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
-                        <span className="text-xs text-slate-400 mb-1">X</span>
-                        <span className="font-bold text-[#eab308]">{odds.draw.toFixed(2)}</span>
+                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-[10px] text-slate-400 mb-0.5">X</span>
+                        <span className="font-bold text-[#eab308] text-sm">{odds.draw.toFixed(2)}</span>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
-                        <span className="text-xs text-slate-400 mb-1">2</span>
-                        <span className="font-bold text-[#eab308]">{odds.away.toFixed(2)}</span>
+                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-[10px] text-slate-400 mb-0.5">2</span>
+                        <span className="font-bold text-[#eab308] text-sm">{odds.away.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
