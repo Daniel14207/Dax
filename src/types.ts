@@ -4,6 +4,7 @@ export interface User {
   password: string;
   tokens: number;
   status: 'active' | 'inactive';
+  createdAt: string;
 }
 
 export interface Match {

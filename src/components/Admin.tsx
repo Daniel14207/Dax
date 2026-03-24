@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { ArrowLeft, Search, CheckCircle, XCircle, Coins } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 
 interface AdminProps {
   onExit: () => void;
@@ -13,22 +15,24 @@ export default function Admin({ onExit }: AdminProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [tokenAmount, setTokenAmount] = useState('');
 
-  const loadUsers = () => {
-    try {
-      const clients = JSON.parse(localStorage.getItem('clients') || '[]');
-      setUsers(clients);
-    } catch (err) {
-      console.error("Erreur lors du chargement des clients", err);
-    }
-  };
-
   useEffect(() => {
-    loadUsers();
-    const interval = setInterval(loadUsers, 2000);
-    return () => clearInterval(interval);
+    const usersRef = collection(db, 'users');
+    const unsubscribe = onSnapshot(usersRef, (snapshot) => {
+      const clients: User[] = [];
+      snapshot.forEach((doc) => {
+        clients.push(doc.data() as User);
+      });
+      // Sort by creation date descending
+      clients.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setUsers(clients);
+    }, (error) => {
+      console.error("Erreur lors du chargement des clients en temps réel:", error);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const handleSendTokens = (e: React.FormEvent) => {
+  const handleSendTokens = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser || !tokenAmount) return;
     
@@ -36,45 +40,31 @@ export default function Admin({ onExit }: AdminProps) {
     if (isNaN(amount) || amount <= 0) return;
 
     try {
-      let clients = JSON.parse(localStorage.getItem('clients') || '[]');
-      clients = clients.map((c: any) => {
-        if (c.id === selectedUser.id) {
-          return { ...c, tokens: c.tokens + amount };
-        }
-        return c;
+      const userRef = doc(db, 'users', selectedUser.id);
+      await updateDoc(userRef, {
+        tokens: selectedUser.tokens + amount
       });
       
-      localStorage.setItem('clients', JSON.stringify(clients));
-      setUsers(clients);
-      
-      // Update current user if they are logged in
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-      if (currentUser && currentUser.id === selectedUser.id) {
-        localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, tokens: currentUser.tokens + amount }));
-      }
-
       setSelectedUser(null);
       setTokenAmount('');
       alert('Tokens envoyés avec succès !');
     } catch (err) {
+      console.error("Erreur lors de l'envoi des tokens:", err);
       alert('Erreur lors de l\'envoi des tokens');
     }
   };
 
-  const handleToggleStatus = (userId: string) => {
+  const handleToggleStatus = async (userId: string) => {
     try {
-      let clients = JSON.parse(localStorage.getItem('clients') || '[]');
-      clients = clients.map((c: any) => {
-        if (c.id === userId) {
-          return { ...c, status: c.status === 'active' ? 'inactive' : 'active' };
-        }
-        return c;
+      const userToUpdate = users.find(u => u.id === userId);
+      if (!userToUpdate) return;
+
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        status: userToUpdate.status === 'active' ? 'inactive' : 'active'
       });
-      
-      localStorage.setItem('clients', JSON.stringify(clients));
-      setUsers(clients);
     } catch (err) {
-      console.error("Erreur lors de la modification du statut", err);
+      console.error("Erreur lors de la modification du statut:", err);
     }
   };
 

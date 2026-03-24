@@ -8,6 +8,8 @@ import Auth from './Auth';
 import MainApp from './components/MainApp';
 import Admin from './components/Admin';
 import { User } from './types';
+import { db } from './firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -18,11 +20,10 @@ export default function App() {
     if (storedUser) {
       const user = JSON.parse(storedUser);
       
-      try {
-        const clients = JSON.parse(localStorage.getItem('clients') || '[]');
-        const updatedUser = clients.find((c: any) => c.id === user.id);
-        
-        if (updatedUser) {
+      const userRef = doc(db, 'users', user.id);
+      const unsubscribe = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const updatedUser = docSnap.data() as User;
           if (updatedUser.status === 'active') {
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
@@ -32,13 +33,15 @@ export default function App() {
             setCurrentUser(null);
           }
         } else {
-          // Fallback if client not found in global list for some reason
-          setCurrentUser(user);
+          // User document deleted
+          localStorage.removeItem('currentUser');
+          setCurrentUser(null);
         }
-      } catch (err) {
-        console.error('Failed to refresh user data', err);
-        setCurrentUser(user);
-      }
+      }, (error) => {
+        console.error('Failed to listen to user data', error);
+      });
+
+      return () => unsubscribe();
     }
   }, []);
 

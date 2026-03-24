@@ -6,6 +6,8 @@ import { useVirtualTime } from '../hooks/useVirtualTime';
 import VirtualAnalysis from './VirtualAnalysis';
 import AviatorSystem from './AviatorSystem';
 import { MatchDetailsModal } from './MatchDetailsModal';
+import { db } from '../firebase';
+import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 
 interface MainAppProps {
   user: User;
@@ -23,39 +25,29 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
   
   const virtualTime = useVirtualTime();
 
-  // Refresh user data periodically to get latest tokens
+  // Listen to user data in real-time
   useEffect(() => {
-    const refreshUser = () => {
-      try {
-        const clients = JSON.parse(localStorage.getItem('clients') || '[]');
-        const updatedUser = clients.find((c: any) => c.id === user.id);
-        if (updatedUser) {
-          setUser(updatedUser);
-          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-        }
-      } catch (err) {
-        console.error('Failed to refresh user data', err);
-      }
-    };
-    
-    refreshUser();
-    const interval = setInterval(refreshUser, 2000); // 2 seconds
-    return () => clearInterval(interval);
-  }, [user.id]);
-
-  const handleAnalyze = () => {
-    try {
-      let clients = JSON.parse(localStorage.getItem('clients') || '[]');
-      const clientIndex = clients.findIndex((c: any) => c.id === user.id);
-      
-      if (clientIndex !== -1 && clients[clientIndex].tokens > 0) {
-        clients[clientIndex].tokens -= 1;
-        localStorage.setItem('clients', JSON.stringify(clients));
-        
-        const updatedUser = clients[clientIndex];
+    const userRef = doc(db, 'users', initialUser.id);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const updatedUser = docSnap.data() as User;
         setUser(updatedUser);
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
       }
+    }, (error) => {
+      console.error('Failed to listen to user data', error);
+    });
+    
+    return () => unsubscribe();
+  }, [initialUser.id]);
+
+  const handleAnalyze = async () => {
+    if (user.tokens <= 0) return;
+    
+    try {
+      const userRef = doc(db, 'users', user.id);
+      await updateDoc(userRef, {
+        tokens: increment(-1)
+      });
     } catch (err) {
       console.error('Failed to deduct token', err);
     }

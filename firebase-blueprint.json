@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A registered user in the betting system",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique client ID like CLT-XXXX"
+        },
+        "phone": {
+          "type": "string",
+          "description": "User's phone number"
+        },
+        "password": {
+          "type": "string",
+          "description": "User's password"
+        },
+        "tokens": {
+          "type": "number",
+          "description": "User's token balance"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp of account creation"
+        }
+      },
+      "required": ["id", "phone", "password", "tokens", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Collection of all registered users"
+    }
+  }
+}

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { User } from './types';
 import { Lock, Phone, UserPlus, LogIn, ShieldAlert } from 'lucide-react';
+import { db } from './firebase';
+import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 
 interface AuthProps {
   onLogin: (user: User) => void;
@@ -14,6 +16,7 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
   const [error, setError] = useState('');
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminCode, setAdminCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,43 +32,59 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
       return;
     }
 
+    setIsLoading(true);
     try {
-      let clients = JSON.parse(localStorage.getItem("clients") || "[]");
+      const usersRef = collection(db, 'users');
 
       if (isLogin) {
-        const user = clients.find((c: any) => c.phone === phone && c.password === password);
-        if (!user) {
+        const q = query(usersRef, where('phone', '==', phone), where('password', '==', password));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
           setError('Identifiants incorrects');
-          return;
-        }
-        if (user.status === 'inactive') {
-          setError('Compte inactif. Veuillez contacter l\'administrateur.');
-          return;
-        }
-        onLogin(user);
-      } else {
-        const exists = clients.find((c: any) => c.phone === phone);
-        if (exists) {
-          setError('Ce numéro est déjà inscrit');
+          setIsLoading(false);
           return;
         }
 
-        const newClient = {
-          id: `CLT-${Math.floor(100000 + Math.random() * 900000)}`,
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data() as User;
+        
+        if (userData.status === 'inactive') {
+          setError('Compte inactif. Veuillez contacter l\'administrateur.');
+          setIsLoading(false);
+          return;
+        }
+        
+        onLogin(userData);
+      } else {
+        // Check if phone already exists
+        const q = query(usersRef, where('phone', '==', phone));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          setError('Ce numéro est déjà inscrit');
+          setIsLoading(false);
+          return;
+        }
+
+        const newId = `CLT-${Math.floor(100000 + Math.random() * 900000)}`;
+        const newClient: User = {
+          id: newId,
           phone,
           password,
           tokens: 0,
-          status: 'active' as const,
+          status: 'active',
           createdAt: new Date().toISOString()
         };
         
-        clients.push(newClient);
-        localStorage.setItem("clients", JSON.stringify(clients));
+        await setDoc(doc(db, 'users', newId), newClient);
         onLogin(newClient);
       }
     } catch (err) {
-      console.error("Erreur locale:", err);
-      setError('Erreur lors de la connexion');
+      console.error("Erreur base de données:", err);
+      setError('Erreur lors de la connexion au serveur');
+    } finally {
+      setIsLoading(false);
     }
   };
 
