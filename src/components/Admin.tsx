@@ -13,14 +13,10 @@ export default function Admin({ onExit }: AdminProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [tokenAmount, setTokenAmount] = useState('');
 
-  const loadUsers = async () => {
+  const loadUsers = () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "";
-      const res = await fetch(`${API_URL}/api/users`);
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
-      }
+      const clients = JSON.parse(localStorage.getItem('clients') || '[]');
+      setUsers(clients);
     } catch (err) {
       console.error("Erreur lors du chargement des clients", err);
     }
@@ -28,9 +24,11 @@ export default function Admin({ onExit }: AdminProps) {
 
   useEffect(() => {
     loadUsers();
+    const interval = setInterval(loadUsers, 2000);
+    return () => clearInterval(interval);
   }, []);
 
-  const handleSendTokens = async (e: React.FormEvent) => {
+  const handleSendTokens = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser || !tokenAmount) return;
     
@@ -38,63 +36,43 @@ export default function Admin({ onExit }: AdminProps) {
     if (isNaN(amount) || amount <= 0) return;
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "";
-      const res = await fetch(`${API_URL}/api/users/${selectedUser.id}/tokens`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
-      });
-
-      if (res.ok) {
-        // Update local state
-        const updatedUsers = users.map(u => {
-          if (u.id === selectedUser.id) {
-            return { ...u, tokens: u.tokens + amount };
-          }
-          return u;
-        });
-        setUsers(updatedUsers);
-        
-        // Update current user if they are logged in
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        if (currentUser && currentUser.id === selectedUser.id) {
-          localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, tokens: currentUser.tokens + amount }));
+      let clients = JSON.parse(localStorage.getItem('clients') || '[]');
+      clients = clients.map((c: any) => {
+        if (c.id === selectedUser.id) {
+          return { ...c, tokens: c.tokens + amount };
         }
-
-        setSelectedUser(null);
-        setTokenAmount('');
-        alert('Tokens envoyés avec succès !');
-      } else {
-        alert('Erreur lors de l\'envoi des tokens');
+        return c;
+      });
+      
+      localStorage.setItem('clients', JSON.stringify(clients));
+      setUsers(clients);
+      
+      // Update current user if they are logged in
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      if (currentUser && currentUser.id === selectedUser.id) {
+        localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, tokens: currentUser.tokens + amount }));
       }
+
+      setSelectedUser(null);
+      setTokenAmount('');
+      alert('Tokens envoyés avec succès !');
     } catch (err) {
-      alert('Erreur de connexion au serveur');
+      alert('Erreur lors de l\'envoi des tokens');
     }
   };
 
-  const handleToggleStatus = async (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return;
-    
-    const newStatus = user.status === 'active' ? 'inactive' : 'active';
-    
+  const handleToggleStatus = (userId: string) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "";
-      const res = await fetch(`${API_URL}/api/users/${userId}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+      let clients = JSON.parse(localStorage.getItem('clients') || '[]');
+      clients = clients.map((c: any) => {
+        if (c.id === userId) {
+          return { ...c, status: c.status === 'active' ? 'inactive' : 'active' };
+        }
+        return c;
       });
-
-      if (res.ok) {
-        const updatedUsers = users.map(u => {
-          if (u.id === userId) {
-            return { ...u, status: newStatus };
-          }
-          return u;
-        });
-        setUsers(updatedUsers);
-      }
+      
+      localStorage.setItem('clients', JSON.stringify(clients));
+      setUsers(clients);
     } catch (err) {
       console.error("Erreur lors de la modification du statut", err);
     }

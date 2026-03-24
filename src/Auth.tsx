@@ -30,30 +30,42 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
     }
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "";
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const res = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, password })
-      });
+      let clients = JSON.parse(localStorage.getItem("clients") || "[]");
 
-      const data = await res.json();
+      if (isLogin) {
+        const user = clients.find((c: any) => c.phone === phone && c.password === password);
+        if (!user) {
+          setError('Identifiants incorrects');
+          return;
+        }
+        if (user.status === 'inactive') {
+          setError('Compte inactif. Veuillez contacter l\'administrateur.');
+          return;
+        }
+        onLogin(user);
+      } else {
+        const exists = clients.find((c: any) => c.phone === phone);
+        if (exists) {
+          setError('Ce numéro est déjà inscrit');
+          return;
+        }
 
-      if (!res.ok) {
-        setError(data.error || 'Une erreur est survenue');
-        return;
+        const newClient = {
+          id: `CLT-${Math.floor(100000 + Math.random() * 900000)}`,
+          phone,
+          password,
+          tokens: 0,
+          status: 'active' as const,
+          createdAt: new Date().toISOString()
+        };
+        
+        clients.push(newClient);
+        localStorage.setItem("clients", JSON.stringify(clients));
+        onLogin(newClient);
       }
-
-      if (data.status === 'inactive') {
-        setError('Compte inactif. Veuillez contacter l\'administrateur.');
-        return;
-      }
-
-      onLogin(data);
     } catch (err) {
-      console.error("Erreur serveur:", err);
-      setError('Connexion au serveur impossible');
+      console.error("Erreur locale:", err);
+      setError('Erreur lors de la connexion');
     }
   };
 

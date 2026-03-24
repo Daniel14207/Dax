@@ -17,23 +17,28 @@ export default function App() {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       const user = JSON.parse(storedUser);
-      setCurrentUser(user);
       
-      const API_URL = import.meta.env.VITE_API_URL || "";
-      // Refresh user data from server
-      fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: user.phone, password: user.password })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) {
-          setCurrentUser(data);
-          localStorage.setItem('currentUser', JSON.stringify(data));
+      try {
+        const clients = JSON.parse(localStorage.getItem('clients') || '[]');
+        const updatedUser = clients.find((c: any) => c.id === user.id);
+        
+        if (updatedUser) {
+          if (updatedUser.status === 'active') {
+            setCurrentUser(updatedUser);
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+          } else {
+            // Account became inactive
+            localStorage.removeItem('currentUser');
+            setCurrentUser(null);
+          }
+        } else {
+          // Fallback if client not found in global list for some reason
+          setCurrentUser(user);
         }
-      })
-      .catch(err => console.error('Failed to refresh user data', err));
+      } catch (err) {
+        console.error('Failed to refresh user data', err);
+        setCurrentUser(user);
+      }
     }
   }, []);
 

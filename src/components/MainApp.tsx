@@ -23,16 +23,11 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
 
   // Refresh user data periodically to get latest tokens
   useEffect(() => {
-    const refreshUser = async () => {
+    const refreshUser = () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || "";
-        const res = await fetch(`${API_URL}/api/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: user.phone, password: user.password })
-        });
-        if (res.ok) {
-          const updatedUser = await res.json();
+        const clients = JSON.parse(localStorage.getItem('clients') || '[]');
+        const updatedUser = clients.find((c: any) => c.id === user.id);
+        if (updatedUser) {
           setUser(updatedUser);
           localStorage.setItem('currentUser', JSON.stringify(updatedUser));
         }
@@ -42,20 +37,20 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     };
     
     refreshUser();
-    const interval = setInterval(refreshUser, 5000); // 5 seconds is better than 2 for API
+    const interval = setInterval(refreshUser, 2000); // 2 seconds
     return () => clearInterval(interval);
-  }, [user.id, user.phone, user.password]);
+  }, [user.id]);
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "";
-      const res = await fetch(`${API_URL}/api/users/${user.id}/tokens`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: -1 })
-      });
-      if (res.ok) {
-        const updatedUser = { ...user, tokens: user.tokens - 1 };
+      let clients = JSON.parse(localStorage.getItem('clients') || '[]');
+      const clientIndex = clients.findIndex((c: any) => c.id === user.id);
+      
+      if (clientIndex !== -1 && clients[clientIndex].tokens > 0) {
+        clients[clientIndex].tokens -= 1;
+        localStorage.setItem('clients', JSON.stringify(clients));
+        
+        const updatedUser = clients[clientIndex];
         setUser(updatedUser);
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
       }
