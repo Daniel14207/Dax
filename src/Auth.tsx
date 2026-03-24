@@ -80,9 +80,10 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
         await setDoc(doc(db, 'users', newId), newClient);
         onLogin(newClient);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erreur base de données:", err);
-      setError('Erreur lors de la connexion au serveur');
+      // Afficher le message d'erreur exact pour comprendre le problème
+      setError(err.message || 'Erreur lors de la connexion au serveur');
     } finally {
       setIsLoading(false);
     }

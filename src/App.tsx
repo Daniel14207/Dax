@@ -8,14 +8,35 @@ import Auth from './Auth';
 import MainApp from './components/MainApp';
 import Admin from './components/Admin';
 import { User } from './types';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthReady(true);
+      } else {
+        signInAnonymously(auth).catch((error) => {
+          console.error("Error signing in anonymously:", error);
+          // If anonymous auth is not enabled, we still want to show the UI
+          // so the user can see the error or we can handle it gracefully
+          setIsAuthReady(true);
+        });
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthReady) return;
+
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       const user = JSON.parse(storedUser);
@@ -43,7 +64,7 @@ export default function App() {
 
       return () => unsubscribe();
     }
-  }, []);
+  }, [isAuthReady]);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -55,6 +76,14 @@ export default function App() {
     setIsAdmin(false);
     localStorage.removeItem('currentUser');
   };
+
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#2dd4bf]"></div>
+      </div>
+    );
+  }
 
   if (isAdmin) {
     return <Admin onExit={() => setIsAdmin(false)} />;
