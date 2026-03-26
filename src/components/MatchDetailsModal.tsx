@@ -154,7 +154,7 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
             </div>
             {isResult && <span className="text-[11px] font-bold text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded-full border border-red-500/20">Résultat Final</span>}
             {isLive && <span className="text-[11px] font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-2 py-1 rounded-full border border-[#2dd4bf]/20 animate-pulse">Match en cours</span>}
-            {isFuture && <span className="text-[11px] font-bold text-slate-400 uppercase bg-slate-800 px-2 py-1 rounded-full border border-slate-700">À venir</span>}
+            {isFuture && <span className="text-[11px] font-bold text-slate-400 uppercase bg-slate-800 px-2 py-1 rounded-full border border-slate-700">Prédiction</span>}
           </div>
 
           <div className="flex justify-between items-center">

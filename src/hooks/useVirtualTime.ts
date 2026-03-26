@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 
 export interface VirtualTimeState {
   currentTime: Date;
-  cycleStartMinutes: number;
-  minutesInCycle: number;
-  isBreak: boolean;
-  currentSlotIndex: number;
-  slots: { time: string; isPast: boolean; isCurrent: boolean; isFuture: boolean }[];
+  cycleIndex: number;
+  msInCycle: number;
+  isLive: boolean; // 0-30s
+  slots: { time: string; isPast: boolean; isCurrent: boolean; isFuture: boolean; cycleOffset: number }[];
 }
 
 export function useVirtualTime() {
@@ -15,38 +14,43 @@ export function useVirtualTime() {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const totalMinutes = hours * 60 + minutes;
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
       
-      const cycleIndex = Math.floor(totalMinutes / 45);
-      const cycleStartMinutes = cycleIndex * 45;
-      const minutesInCycle = totalMinutes - cycleStartMinutes;
+      const msSinceStartOfDay = now.getTime() - startOfDay.getTime();
+      const CYCLE_DURATION = 90000; // 90 seconds
+      const LIVE_DURATION = 30000; // 30 seconds
       
-      const isBreak = minutesInCycle >= 40;
-      const currentSlotIndex = isBreak ? 19 : Math.floor(minutesInCycle / 2);
+      const cycleIndex = Math.floor(msSinceStartOfDay / CYCLE_DURATION);
+      const msInCycle = msSinceStartOfDay % CYCLE_DURATION;
+      
+      const isLive = msInCycle < LIVE_DURATION;
       
       const slots = [];
-      for (let i = 0; i < 20; i++) {
-        const slotMinutes = cycleStartMinutes + i * 2;
-        const slotH = Math.floor(slotMinutes / 60) % 24;
-        const slotM = slotMinutes % 60;
+      // Generate slots: past 5, current, future 10
+      for (let i = -5; i <= 10; i++) {
+        const slotCycle = cycleIndex + i;
+        const virtualMinutes = slotCycle * 2;
+        
+        const slotTime = new Date(startOfDay.getTime() + virtualMinutes * 60000);
+        const slotH = slotTime.getHours();
+        const slotM = slotTime.getMinutes();
         const timeStr = `${slotH.toString().padStart(2, '0')}:${slotM.toString().padStart(2, '0')}`;
         
         slots.push({
           time: timeStr,
-          isPast: i < currentSlotIndex,
-          isCurrent: i === currentSlotIndex && !isBreak,
-          isFuture: i > currentSlotIndex || isBreak
+          isPast: i < 0 || (i === 0 && !isLive),
+          isCurrent: i === 0 && isLive,
+          isFuture: i > 0,
+          cycleOffset: i
         });
       }
 
       setState({
         currentTime: now,
-        cycleStartMinutes,
-        minutesInCycle,
-        isBreak,
-        currentSlotIndex,
+        cycleIndex,
+        msInCycle,
+        isLive,
         slots
       });
     };

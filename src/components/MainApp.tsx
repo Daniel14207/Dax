@@ -108,12 +108,6 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               {slot.isCurrent && <span className="text-[9px] uppercase font-bold mt-0.5 animate-pulse">Live</span>}
             </div>
           ))}
-          {virtualTime.isBreak && (
-            <div className="px-3 py-1.5 rounded-lg text-xs font-medium flex flex-col items-center min-w-[60px] bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]">
-              <span>STOP</span>
-              <span className="text-[9px] uppercase font-bold mt-0.5">NEW (+5m)</span>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -181,19 +175,23 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
                 if (teamNames.length === 0) return null;
 
-                // Use cycleStartMinutes to ensure teams shuffle each cycle
-                const cycleSeed = virtualTime.cycleStartMinutes;
-                const homeTeam = teamNames[(slotIndex * 3 + cycleSeed + 10) % teamNames.length];
-                const awayTeam = teamNames[(slotIndex * 5 + cycleSeed + 1) % teamNames.length];
-                const finalAwayTeam = homeTeam === awayTeam ? teamNames[(slotIndex * 7 + cycleSeed + 2) % teamNames.length] : awayTeam;
+                // Use cycleIndex to ensure teams shuffle each cycle
+                const cycleSeed = virtualTime.cycleIndex;
+                const offset = slot.cycleOffset;
+                const homeIdx = Math.abs(offset * 3 + cycleSeed + 10) % teamNames.length;
+                const awayIdx = Math.abs(offset * 5 + cycleSeed + 1) % teamNames.length;
+                const finalAwayIdx = homeIdx === awayIdx ? Math.abs(offset * 7 + cycleSeed + 2) % teamNames.length : awayIdx;
+                
+                const homeTeam = teamNames[homeIdx];
+                const awayTeam = teamNames[finalAwayIdx];
                 
                 const isResult = slot.isPast;
                 const isLive = slot.isCurrent;
                 const isFuture = slot.isFuture;
-                const odds = generateOdds(league.id, homeTeam, finalAwayTeam);
+                const odds = generateOdds(league.id, homeTeam, awayTeam);
                 
                 // Deterministic score based on slot and teams
-                const scoreSeed = slotIndex * homeTeam.length * finalAwayTeam.length + cycleSeed;
+                const scoreSeed = Math.abs(offset * homeTeam.length * awayTeam.length + cycleSeed);
                 const homeScore = scoreSeed % 4;
                 const awayScore = (scoreSeed / 2) % 4 | 0;
                 
@@ -226,7 +224,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                         )}
                         {isResult && <span className="text-[9px] font-bold text-red-400 uppercase bg-red-500/10 px-1.5 py-0.5 rounded">Résultat</span>}
                         {isLive && <span className="text-[9px] font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-1.5 py-0.5 rounded animate-pulse">Live</span>}
-                        {isFuture && <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-800 px-1.5 py-0.5 rounded">À venir</span>}
+                        {isFuture && <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-800 px-1.5 py-0.5 rounded">Prédiction</span>}
                       </div>
                     </div>
                     
