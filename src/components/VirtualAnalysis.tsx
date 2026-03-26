@@ -16,6 +16,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSavingHistory, setIsSavingHistory] = useState(false);
+  const [isHistorySaved, setIsHistorySaved] = useState(false);
   const [results, setResults] = useState<VirtualAnalysisResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -26,17 +27,18 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
   };
 
   const handleHistoryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = e.target.files ? (Array.from(e.target.files) as File[]) : [];
     if (historyImages.length + files.length > 5) {
       showToast('Maximum 5 images autorisées');
       return;
     }
     const newImages = files.map(f => URL.createObjectURL(f));
     setHistoryImages([...historyImages, ...newImages]);
+    setIsHistorySaved(false); // Reset saved state when new images are added
   };
 
   const handleMatchUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = e.target.files ? (Array.from(e.target.files) as File[]) : [];
     if (matchImages.length + files.length > 5) {
       showToast('Maximum 5 images autorisées');
       return;
@@ -47,6 +49,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
 
   const removeHistoryImage = (index: number) => {
     setHistoryImages(historyImages.filter((_, i) => i !== index));
+    setIsHistorySaved(false);
   };
 
   const removeMatchImage = (index: number) => {
@@ -62,6 +65,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
     // Simulate OCR and saving
     setTimeout(() => {
       setIsSavingHistory(false);
+      setIsHistorySaved(true);
       showToast('Historique analysé et sauvegardé avec succès !');
     }, 2000);
   };
@@ -69,6 +73,10 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
   const handleAnalyze = () => {
     if (userTokens <= 0) {
       showToast('Tokens insuffisants');
+      return;
+    }
+    if (!isHistorySaved) {
+      showToast('Veuillez d\'abord sauvegarder un historique.');
       return;
     }
     if (matchImages.length === 0 || !matchTime.trim()) {
@@ -87,16 +95,22 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
       const batchId = Math.random().toString(36).substr(2, 9);
       const newResults: VirtualAnalysisResult[] = [];
       
-      // Simulate extracting 3-5 matches from the images
-      const numMatches = Math.floor(Math.random() * 3) + 3;
-      const teamNames = TEAMS_BY_LEAGUE[selectedLeague] || TEAMS_BY_LEAGUE['eng'];
+      // Simulation OCR : Extraction de TOUS les matchs présents sur l'image
+      // Simulation IA : Analyse basée UNIQUEMENT sur l'historique uploadé
+      const teamNames = [...(TEAMS_BY_LEAGUE[selectedLeague] || TEAMS_BY_LEAGUE['eng'])];
+      
+      // Mélanger les équipes pour simuler une journée de championnat complète lue sur l'image
+      for (let i = teamNames.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [teamNames[i], teamNames[j]] = [teamNames[j], teamNames[i]];
+      }
+      
+      // Créer les matchs (toutes les équipes jouent, donc teamNames.length / 2 matchs)
+      const numMatches = Math.floor(teamNames.length / 2);
       
       for (let i = 0; i < numMatches; i++) {
-        const homeTeam = teamNames[Math.floor(Math.random() * teamNames.length)];
-        let awayTeam = teamNames[Math.floor(Math.random() * teamNames.length)];
-        while (awayTeam === homeTeam) {
-          awayTeam = teamNames[Math.floor(Math.random() * teamNames.length)];
-        }
+        const homeTeam = teamNames[i * 2];
+        const awayTeam = teamNames[i * 2 + 1];
         
         const isHotMatch = Math.random() > 0.7;
         const confidence = Math.floor(Math.random() * 20) + 75; // 75 to 95
@@ -134,9 +148,10 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
         });
       }
 
-      const updatedResults = [...newResults, ...results];
-      setResults(updatedResults);
-      localStorage.setItem('virtualAnalyses', JSON.stringify(updatedResults));
+      // Remplacer les résultats précédents par les nouveaux pour n'afficher que l'analyse courante
+      // comme demandé : "Si l'image contient 10 matchs -> afficher 10 résultats"
+      setResults(newResults);
+      localStorage.setItem('virtualAnalyses', JSON.stringify(newResults));
     }, analysisTime);
   };
 
@@ -160,12 +175,12 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
 
   // Generate VIP Multiples
   const generateMultiples = () => {
-    if (results.length < 2) return [];
+    if (results.length < 3) return [];
     const multiples = [];
     const numMultiples = Math.floor(Math.random() * 11) + 10; // 10 to 20
     
     for (let i = 0; i < numMultiples; i++) {
-      const numMatches = Math.floor(Math.random() * 3) + 2; // 2 to 4 matches per multiple
+      const numMatches = 3; // Exactly 3 matches per multiple
       const selectedMatches = [...results].sort(() => 0.5 - Math.random()).slice(0, numMatches);
       
       let totalOdds = 1;
@@ -184,11 +199,19 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
   const generateCoteBoost = () => {
     if (results.length === 0) return [];
     const boosts = [];
-    const numBoosts = Math.floor(Math.random() * 3) + 1; // 1 to 3
+    const numBoosts = Math.floor(Math.random() * 4) + 2; // 2 to 5
     
+    const comments = [
+      "Forte récurrence sur les 5 derniers historiques",
+      "Tendance confirmée par l'IA",
+      "Anomalie détectée, forte probabilité",
+      "Match similaire trouvé dans l'historique",
+      "Schéma tactique favorable"
+    ];
+
     for (let i = 0; i < numBoosts; i++) {
       const match = results[Math.floor(Math.random() * results.length)];
-      const isExtreme = Math.random() > 0.8; // 20% chance for 50+ or 100
+      const isExtreme = Math.random() > 0.85; // 15% chance for 50+ or 100
       const odd = isExtreme ? (Math.random() > 0.5 ? 100 : Number((Math.random() * 30 + 50).toFixed(2))) : Number((Math.random() * 15 + 10).toFixed(2));
       
       boosts.push({
@@ -196,7 +219,8 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
         match: `${match.homeTeam} vs ${match.awayTeam}`,
         pick: match.results.exactScore,
         type: 'Score Exact',
-        odd: odd.toFixed(2)
+        odd: odd.toFixed(2),
+        comment: comments[Math.floor(Math.random() * comments.length)]
       });
     }
     return boosts;
@@ -326,59 +350,6 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
             </button>
           </div>
 
-          {/* COTE BOOST SECTION */}
-          {coteBoosts.length > 0 && (
-            <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/30 rounded-xl p-4">
-              <h4 className="text-red-400 font-bold flex items-center gap-2 mb-3">
-                <TrendingUp className="w-5 h-5" />
-                COTE BOOST (Risque Élevé)
-              </h4>
-              <div className="space-y-2">
-                {coteBoosts.map(boost => (
-                  <div key={boost.id} className="bg-slate-900/50 p-3 rounded-lg flex justify-between items-center border border-red-500/20">
-                    <div>
-                      <div className="text-white font-bold text-sm">{boost.match}</div>
-                      <div className="text-slate-400 text-xs">{boost.type}: <span className="text-[#eab308] font-bold">{boost.pick}</span></div>
-                    </div>
-                    <div className="bg-red-500/20 text-red-400 font-bold px-3 py-1 rounded border border-red-500/30">
-                      {boost.odd}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* MULTIPLE VIP SECTION */}
-          {multiples.length > 0 && (
-            <div className="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/30 rounded-xl p-4">
-              <h4 className="text-emerald-400 font-bold flex items-center gap-2 mb-3">
-                <ShieldCheck className="w-5 h-5" />
-                MULTIPLE VIP
-              </h4>
-              <div className="space-y-3">
-                {multiples.map(mult => (
-                  <div key={mult.id} className="bg-slate-900/50 p-3 rounded-lg border border-emerald-500/20">
-                    <div className="flex justify-between items-center mb-2 border-b border-slate-700/50 pb-2">
-                      <span className="text-emerald-400 font-bold text-sm">Ticket #{mult.id + 1}</span>
-                      <span className="bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded text-xs border border-emerald-500/30">
-                        Cote: {mult.totalOdds}
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      {mult.picks.map((pick, idx) => (
-                        <div key={idx} className="flex justify-between text-xs">
-                          <span className="text-slate-300 truncate pr-2">{pick.match}</span>
-                          <span className="text-emerald-400 font-bold whitespace-nowrap">{pick.pick} ({pick.odd})</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
           {/* INDIVIDUAL MATCH RESULTS */}
           <div className="space-y-4">
             {results.map((res) => {
@@ -469,6 +440,66 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
               );
             })}
           </div>
+
+          {/* MULTIPLE VIP SECTION */}
+          {multiples.length > 0 && (
+            <div className="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/30 rounded-xl p-4">
+              <h4 className="text-emerald-400 font-bold flex items-center gap-2 mb-3">
+                <ShieldCheck className="w-5 h-5" />
+                MULTIPLE VIP
+              </h4>
+              <div className="space-y-3">
+                {multiples.map(mult => (
+                  <div key={mult.id} className="bg-slate-900/50 p-3 rounded-lg border border-emerald-500/20">
+                    <div className="flex justify-between items-center mb-2 border-b border-slate-700/50 pb-2">
+                      <span className="text-emerald-400 font-bold text-sm">Ticket #{mult.id + 1}</span>
+                      <span className="bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded text-xs border border-emerald-500/30">
+                        Cote: {mult.totalOdds}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {mult.picks.map((pick, idx) => (
+                        <div key={idx} className="flex justify-between text-xs">
+                          <span className="text-slate-300 truncate pr-2">{pick.match}</span>
+                          <span className="text-emerald-400 font-bold whitespace-nowrap">{pick.pick} ({pick.odd})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* COTE BOOST SECTION */}
+          {coteBoosts.length > 0 && (
+            <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/30 rounded-xl p-4">
+              <h4 className="text-red-400 font-bold flex items-center gap-2 mb-3">
+                <TrendingUp className="w-5 h-5" />
+                COTE CIBLE +10 (Risque Élevé)
+              </h4>
+              <div className="space-y-2">
+                {coteBoosts.map((boost: any) => (
+                  <div key={boost.id} className="bg-slate-900/50 p-3 rounded-lg flex flex-col gap-2 border border-red-500/20">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-white font-bold text-sm">{boost.match}</div>
+                        <div className="text-slate-400 text-xs">{boost.type}: <span className="text-[#eab308] font-bold">{boost.pick}</span></div>
+                      </div>
+                      <div className="bg-red-500/20 text-red-400 font-bold px-3 py-1 rounded border border-red-500/30">
+                        {boost.odd}
+                      </div>
+                    </div>
+                    {boost.comment && (
+                      <div className="text-xs text-red-300/80 italic border-t border-red-500/10 pt-2 mt-1">
+                        💡 {boost.comment}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

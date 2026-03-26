@@ -203,7 +203,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                     key={slotIndex} 
                     className={`p-2 hover:bg-slate-800/30 transition-colors cursor-pointer relative overflow-hidden ${isHotMatch ? 'border-l-2 border-[#eab308]' : ''}`}
                     onClick={() => setSelectedMatch({
-                      league, homeTeam, awayTeam: finalAwayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed
+                      league, homeTeam, awayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed
                     })}
                   >
                     {isHotMatch && (
@@ -245,8 +245,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                       </div>
                       
                       <div className="flex-1 flex flex-col items-center gap-1">
-                        <img src={getTeamLogo(finalAwayTeam, league.id)} alt={finalAwayTeam} className="w-5 h-5 object-contain" />
-                        <span className="font-bold text-white text-[11px] text-center leading-tight truncate w-full px-1">{finalAwayTeam}</span>
+                        <img src={getTeamLogo(awayTeam, league.id)} alt={awayTeam} className="w-5 h-5 object-contain" />
+                        <span className="font-bold text-white text-[11px] text-center leading-tight truncate w-full px-1">{awayTeam}</span>
                       </div>
                     </div>
                     
