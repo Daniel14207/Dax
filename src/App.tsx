@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Auth from './Auth';
 import MainApp from './components/MainApp';
 import Admin from './components/Admin';
@@ -11,34 +11,6 @@ import { User } from './types';
 import { db, auth } from './firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-
-// Component manokana hampisehoana ny doka Adsterra ao amin'ny React
-const AdBanner = ({ id, height, width, hash }: { id: string, height: number, width: number, hash: string }) => {
-  const bannerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (bannerRef.current && !bannerRef.current.firstChild) {
-      const conf = document.createElement('script');
-      const script = document.createElement('script');
-      conf.type = 'text/javascript';
-      conf.innerHTML = `
-        atOptions = {
-          'key' : '${hash}',
-          'format' : 'iframe',
-          'height' : ${height},
-          'width' : ${width},
-          'params' : {}
-        };
-      `;
-      script.type = 'text/javascript';
-      script.src = `//www.highperformanceformat.com/${hash}/invoke.js`;
-      bannerRef.current.append(conf);
-      bannerRef.current.append(script);
-    }
-  }, [hash, height, width]);
-
-  return <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }} ref={bannerRef}></div>;
-};
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -52,18 +24,23 @@ export default function App() {
       } else {
         signInAnonymously(auth).catch((error) => {
           console.error("Error signing in anonymously:", error);
+          // If anonymous auth is not enabled, we still want to show the UI
+          // so the user can see the error or we can handle it gracefully
           setIsAuthReady(true);
         });
       }
     });
+
     return () => unsubscribeAuth();
   }, []);
 
   useEffect(() => {
     if (!isAuthReady) return;
+
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       const user = JSON.parse(storedUser);
+      
       const userRef = doc(db, 'users', user.id);
       const unsubscribe = onSnapshot(userRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -72,16 +49,19 @@ export default function App() {
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
           } else {
+            // Account became inactive
             localStorage.removeItem('currentUser');
             setCurrentUser(null);
           }
         } else {
+          // User document deleted
           localStorage.removeItem('currentUser');
           setCurrentUser(null);
         }
       }, (error) => {
         console.error('Failed to listen to user data', error);
       });
+
       return () => unsubscribe();
     }
   }, [isAuthReady]);
@@ -110,26 +90,8 @@ export default function App() {
   }
 
   if (!currentUser) {
-    return (
-      <>
-        {/* Doka kely eo ambonin'ny pejy Login */}
-        <AdBanner id="top-ad-auth" height={60} width={468} hash="6a1fbab843840829bce64f162306344c" />
-        <Auth onLogin={handleLogin} onAdminAccess={() => setIsAdmin(true)} />
-      </>
-    );
+    return <Auth onLogin={handleLogin} onAdminAccess={() => setIsAdmin(true)} />;
   }
 
-  return (
-    <div className="flex flex-col min-h-screen bg-[#0f172a]">
-      {/* Doka eo ambonin'ny Application */}
-      <AdBanner id="top-ad-main" height={60} width={468} hash="6a1fbab843840829bce64f162306344c" />
-      
-      <div className="flex-grow">
-        <MainApp user={currentUser} onLogout={handleLogout} onAdminAccess={() => setIsAdmin(true)} />
-      </div>
-
-      {/* Doka Banner lehibe eo ambany pejy (Footer) */}
-      <AdBanner id="bottom-ad" height={250} width={300} hash="4521e6c4c2aa30c7a5bae5cff1137ec6" />
-    </div>
-  );
+  return <MainApp user={currentUser} onLogout={handleLogout} onAdminAccess={() => setIsAdmin(true)} />;
 }
