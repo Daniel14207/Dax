@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { VirtualAnalysisResult } from '../types';
 import { Save, Search, Loader2, Trash2, Clock, Flame, BarChart3, Upload, Image as ImageIcon, X, Copy, CheckCircle, TrendingUp, ShieldCheck } from 'lucide-react';
 import { LEAGUES, TEAMS_BY_LEAGUE, getTeamLogo } from '../data';
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface Props {
   userTokens: number;
@@ -70,7 +71,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
     }, 2000);
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (userTokens <= 0) {
       showToast('Tokens insuffisants');
       return;
@@ -87,72 +88,142 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
     onAnalyze(); // Deduct token
     setIsAnalyzing(true);
 
-    // Simulate 3-5s analysis
-    const analysisTime = Math.floor(Math.random() * 2000) + 3000;
-    setTimeout(() => {
-      setIsAnalyzing(false);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
-      const batchId = Math.random().toString(36).substr(2, 9);
-      const newResults: VirtualAnalysisResult[] = [];
-      
-      // Simulation OCR : Extraction de TOUS les matchs présents sur l'image
-      // Simulation IA : Analyse basée UNIQUEMENT sur l'historique uploadé
-      const teamNames = [...(TEAMS_BY_LEAGUE[selectedLeague] || TEAMS_BY_LEAGUE['eng'])];
-      
-      // Mélanger les équipes pour simuler une journée de championnat complète lue sur l'image
-      for (let i = teamNames.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [teamNames[i], teamNames[j]] = [teamNames[j], teamNames[i]];
-      }
-      
-      // Créer les matchs (toutes les équipes jouent, donc teamNames.length / 2 matchs)
-      const numMatches = Math.floor(teamNames.length / 2);
-      
-      for (let i = 0; i < numMatches; i++) {
-        const homeTeam = teamNames[i * 2];
-        const awayTeam = teamNames[i * 2 + 1];
-        
-        const isHotMatch = Math.random() > 0.7;
-        const confidence = Math.floor(Math.random() * 20) + 75; // 75 to 95
-
-        newResults.push({
-          batchId,
-          matchId: Math.random().toString(36).substr(2, 9),
-          leagueId: selectedLeague,
-          time: matchTime,
-          homeTeam,
-          awayTeam,
-          isHotMatch,
-          confidence,
-          results: {
-            ft1x2: ['1', 'X', '2'][Math.floor(Math.random() * 3)],
-            ht1x2: ['1', 'X', '2'][Math.floor(Math.random() * 3)],
-            dc: ['1X', '12', 'X2'][Math.floor(Math.random() * 3)],
-            dcHt: ['1X', '12', 'X2'][Math.floor(Math.random() * 3)],
-            exactScore: `${Math.floor(Math.random() * 4)}-${Math.floor(Math.random() * 4)}`,
-            htScore: `${Math.floor(Math.random() * 2)}-${Math.floor(Math.random() * 2)}`,
-            ou05: Math.random() > 0.1 ? 'Over' : 'Under',
-            ou15: Math.random() > 0.3 ? 'Over' : 'Under',
-            ou25: Math.random() > 0.5 ? 'Over' : 'Under',
-            ou35: Math.random() > 0.7 ? 'Over' : 'Under',
-            htft: ['1/1', 'X/1', '2/2', 'X/X'][Math.floor(Math.random() * 4)],
-            totalGoals: Math.floor(Math.random() * 5).toString(),
-            ggng: Math.random() > 0.5 ? 'GG' : 'NG',
-            btts: Math.random() > 0.5 ? 'Yes' : 'No',
-            teamTotals: `H: ${Math.floor(Math.random() * 3)} | A: ${Math.floor(Math.random() * 3)}`,
-            oddEven: Math.random() > 0.5 ? 'Odd' : 'Even',
-            firstGoalMin: `${Math.floor(Math.random() * 45) + 1}'`,
-            multiGoals: '1-3',
-            ftts: Math.random() > 0.5 ? 'Home' : 'Away'
-          }
+      const blobToBase64 = async (url: string): Promise<string> => {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64data = reader.result as string;
+            resolve(base64data.split(',')[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
         });
-      }
+      };
 
-      // Remplacer les résultats précédents par les nouveaux pour n'afficher que l'analyse courante
-      // comme demandé : "Si l'image contient 10 matchs -> afficher 10 résultats"
+      const matchParts = await Promise.all(matchImages.map(async (url) => {
+        const base64 = await blobToBase64(url);
+        return { inlineData: { data: base64, mimeType: "image/jpeg" } };
+      }));
+      
+      const historyParts = await Promise.all(historyImages.map(async (url) => {
+        const base64 = await blobToBase64(url);
+        return { inlineData: { data: base64, mimeType: "image/jpeg" } };
+      }));
+
+      const prompt = `
+      Tu es une IA experte en paris sportifs.
+      Voici deux ensembles d'images :
+      1. Les ${historyParts.length} premières images sont l'HISTORIQUE des matchs passés.
+      2. Les ${matchParts.length} dernières images sont les MATCHS À ANALYSER avec leurs cotes.
+
+      INSTRUCTIONS STRICTES :
+      1. EXTRACTION : Lis TOUT le contenu des images de MATCHS À ANALYSER. Détecte CHAQUE ligne contenant un match. Les matchs peuvent être au format 'Équipe A - Équipe B | cotes' ou sur plusieurs lignes 'Équipe A \\n Équipe B cotes'. N'invente AUCUN match. N'ignore AUCUN match présent sur l'image.
+      2. COTES : Pour chaque match, extrais les cotes 1X2 (domicile, nul, extérieur).
+      3. ANALYSE : Compare chaque match extrait avec les tendances de l'HISTORIQUE pour générer des prédictions réalistes.
+      4. COTES +10 : Si et SEULEMENT SI tu vois des cotes supérieures à 10.00 sur l'image pour un match (ex: score exact), extrais-les dans 'highOdds'. N'invente JAMAIS de cotes. Si aucune cote > 10 n'est visible pour un match, laisse 'highOdds' vide.
+
+      Génère un tableau JSON contenant UNIQUEMENT les matchs trouvés sur l'image.
+      `;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: {
+          parts: [
+            ...historyParts,
+            ...matchParts,
+            { text: prompt }
+          ]
+        },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                homeTeam: { type: Type.STRING },
+                awayTeam: { type: Type.STRING },
+                extractedOdds: {
+                  type: Type.OBJECT,
+                  properties: {
+                    home: { type: Type.NUMBER },
+                    draw: { type: Type.NUMBER },
+                    away: { type: Type.NUMBER }
+                  },
+                  required: ["home", "draw", "away"]
+                },
+                highOdds: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      type: { type: Type.STRING, description: "ex: Score Exact" },
+                      pick: { type: Type.STRING, description: "ex: 2-1" },
+                      odd: { type: Type.STRING, description: "Cote > 10 lue sur l'image" },
+                      comment: { type: Type.STRING, description: "Commentaire IA" }
+                    },
+                    required: ["type", "pick", "odd", "comment"]
+                  }
+                },
+                results: {
+                  type: Type.OBJECT,
+                  properties: {
+                    ft1x2: { type: Type.STRING },
+                    ht1x2: { type: Type.STRING },
+                    dc: { type: Type.STRING },
+                    dcHt: { type: Type.STRING },
+                    exactScore: { type: Type.STRING },
+                    htScore: { type: Type.STRING },
+                    ou05: { type: Type.STRING },
+                    ou15: { type: Type.STRING },
+                    ou25: { type: Type.STRING },
+                    ou35: { type: Type.STRING },
+                    htft: { type: Type.STRING },
+                    totalGoals: { type: Type.STRING },
+                    ggng: { type: Type.STRING },
+                    btts: { type: Type.STRING },
+                    teamTotals: { type: Type.STRING },
+                    oddEven: { type: Type.STRING },
+                    firstGoalMin: { type: Type.STRING },
+                    multiGoals: { type: Type.STRING },
+                    ftts: { type: Type.STRING }
+                  },
+                  required: ["ft1x2", "ht1x2", "dc", "dcHt", "exactScore", "htScore", "ou05", "ou15", "ou25", "ou35", "htft", "totalGoals", "ggng", "btts", "teamTotals", "oddEven", "firstGoalMin", "multiGoals", "ftts"]
+                },
+                confidence: { type: Type.NUMBER, description: "Confiance entre 70 et 99" },
+                isHotMatch: { type: Type.BOOLEAN }
+              },
+              required: ["homeTeam", "awayTeam", "extractedOdds", "results", "confidence", "isHotMatch"]
+            }
+          }
+        }
+      });
+
+      const text = response.text || "[]";
+      const parsedMatches = JSON.parse(text);
+      const batchId = Math.random().toString(36).substr(2, 9);
+      
+      const newResults: VirtualAnalysisResult[] = parsedMatches.map((m: any) => ({
+        ...m,
+        batchId,
+        matchId: Math.random().toString(36).substr(2, 9),
+        leagueId: selectedLeague,
+        time: matchTime
+      }));
+
       setResults(newResults);
       localStorage.setItem('virtualAnalyses', JSON.stringify(newResults));
-    }, analysisTime);
+    } catch (error) {
+      console.error("Analysis error:", error);
+      showToast("Erreur lors de l'analyse. Veuillez réessayer.");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const clearResults = () => {
@@ -175,17 +246,22 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
 
   // Generate VIP Multiples
   const generateMultiples = () => {
-    if (results.length < 3) return [];
+    if (results.length < 2) return [];
     const multiples = [];
     const numMultiples = Math.floor(Math.random() * 11) + 10; // 10 to 20
     
     for (let i = 0; i < numMultiples; i++) {
-      const numMatches = 3; // Exactly 3 matches per multiple
+      const numMatches = Math.min(3, results.length); // Up to 3 matches per multiple
       const selectedMatches = [...results].sort(() => 0.5 - Math.random()).slice(0, numMatches);
       
       let totalOdds = 1;
       const picks = selectedMatches.map(m => {
-        const odd = Number((Math.random() * 1.5 + 1.2).toFixed(2));
+        let odd = 1.5; // Default fallback
+        if (m.extractedOdds) {
+          if (m.results.ft1x2 === '1') odd = m.extractedOdds.home;
+          else if (m.results.ft1x2 === 'X') odd = m.extractedOdds.draw;
+          else if (m.results.ft1x2 === '2') odd = m.extractedOdds.away;
+        }
         totalOdds *= odd;
         return { match: `${m.homeTeam} vs ${m.awayTeam}`, pick: m.results.ft1x2, odd };
       });
@@ -195,34 +271,26 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
     return multiples;
   };
 
-  // Generate Cote Boost
+  // Generate Cote Boost (Filtré depuis les cotes lues sur l'image)
   const generateCoteBoost = () => {
     if (results.length === 0) return [];
-    const boosts = [];
-    const numBoosts = Math.floor(Math.random() * 4) + 2; // 2 to 5
+    const boosts: any[] = [];
     
-    const comments = [
-      "Forte récurrence sur les 5 derniers historiques",
-      "Tendance confirmée par l'IA",
-      "Anomalie détectée, forte probabilité",
-      "Match similaire trouvé dans l'historique",
-      "Schéma tactique favorable"
-    ];
+    results.forEach(match => {
+      if (match.highOdds && match.highOdds.length > 0) {
+        match.highOdds.forEach((ho, idx) => {
+          boosts.push({
+            id: `${match.matchId}-${idx}`,
+            match: `${match.homeTeam} vs ${match.awayTeam}`,
+            pick: ho.pick,
+            type: ho.type,
+            odd: ho.odd,
+            comment: ho.comment
+          });
+        });
+      }
+    });
 
-    for (let i = 0; i < numBoosts; i++) {
-      const match = results[Math.floor(Math.random() * results.length)];
-      const isExtreme = Math.random() > 0.85; // 15% chance for 50+ or 100
-      const odd = isExtreme ? (Math.random() > 0.5 ? 100 : Number((Math.random() * 30 + 50).toFixed(2))) : Number((Math.random() * 15 + 10).toFixed(2));
-      
-      boosts.push({
-        id: i,
-        match: `${match.homeTeam} vs ${match.awayTeam}`,
-        pick: match.results.exactScore,
-        type: 'Score Exact',
-        odd: odd.toFixed(2),
-        comment: comments[Math.floor(Math.random() * comments.length)]
-      });
-    }
     return boosts;
   };
 

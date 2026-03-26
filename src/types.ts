@@ -67,6 +67,17 @@ export interface VirtualAnalysisResult {
     multiGoals: string;
     ftts: string;
   };
+  highOdds?: {
+    type: string;
+    pick: string;
+    odd: string;
+    comment: string;
+  }[];
+  extractedOdds?: {
+    home: number;
+    draw: number;
+    away: number;
+  };
 }
 
 export interface AviatorRound {
