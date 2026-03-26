@@ -91,14 +91,19 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
-      const blobToBase64 = async (url: string): Promise<string> => {
+      const blobToBase64 = async (url: string): Promise<{data: string, mimeType: string}> => {
         const response = await fetch(url);
         const blob = await response.blob();
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
             const base64data = reader.result as string;
-            resolve(base64data.split(',')[1]);
+            const match = base64data.match(/^data:(.+);base64,(.*)$/);
+            if (match) {
+              resolve({ mimeType: match[1], data: match[2] });
+            } else {
+              resolve({ mimeType: blob.type || 'image/jpeg', data: base64data.split(',')[1] });
+            }
           };
           reader.onerror = reject;
           reader.readAsDataURL(blob);
@@ -106,13 +111,13 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
       };
 
       const matchParts = await Promise.all(matchImages.map(async (url) => {
-        const base64 = await blobToBase64(url);
-        return { inlineData: { data: base64, mimeType: "image/jpeg" } };
+        const { data, mimeType } = await blobToBase64(url);
+        return { inlineData: { data, mimeType } };
       }));
       
       const historyParts = await Promise.all(historyImages.map(async (url) => {
-        const base64 = await blobToBase64(url);
-        return { inlineData: { data: base64, mimeType: "image/jpeg" } };
+        const { data, mimeType } = await blobToBase64(url);
+        return { inlineData: { data, mimeType } };
       }));
 
       const prompt = `
@@ -151,9 +156,9 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
                 extractedOdds: {
                   type: Type.OBJECT,
                   properties: {
-                    home: { type: Type.NUMBER },
-                    draw: { type: Type.NUMBER },
-                    away: { type: Type.NUMBER }
+                    home: { type: Type.STRING, description: "Cote domicile, ex: '2.15'" },
+                    draw: { type: Type.STRING, description: "Cote nul, ex: '3.10'" },
+                    away: { type: Type.STRING, description: "Cote extérieur, ex: '2.80'" }
                   },
                   required: ["home", "draw", "away"]
                 },
@@ -204,7 +209,8 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
         }
       });
 
-      const text = response.text || "[]";
+      let text = response.text || "[]";
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       const parsedMatches = JSON.parse(text);
       const batchId = Math.random().toString(36).substr(2, 9);
       
@@ -218,9 +224,9 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
 
       setResults(newResults);
       localStorage.setItem('virtualAnalyses', JSON.stringify(newResults));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Analysis error:", error);
-      showToast("Erreur lors de l'analyse. Veuillez réessayer.");
+      showToast(`Erreur: ${error.message || "Impossible d'analyser l'image"}`);
     } finally {
       setIsAnalyzing(false);
     }
