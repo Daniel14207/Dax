@@ -82,6 +82,10 @@ export interface VirtualAnalysisResult {
     firstGoalMin: string;
     multiGoals: string;
     ftts: string;
+    teamHomeOver15?: boolean;
+    teamHomeOver25?: boolean;
+    teamAwayOver05?: boolean;
+    teamAwayOver15?: boolean;
   };
 }
 
