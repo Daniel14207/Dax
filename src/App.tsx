@@ -8,9 +8,8 @@ import Auth from './Auth';
 import MainApp from './components/MainApp';
 import Admin from './components/Admin';
 import { User } from './types';
-import { db, auth } from './firebase';
+import { db } from './firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -18,20 +17,9 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsAuthReady(true);
-      } else {
-        signInAnonymously(auth).catch((error) => {
-          console.error("Error signing in anonymously:", error);
-          // If anonymous auth is not enabled, we still want to show the UI
-          // so the user can see the error or we can handle it gracefully
-          setIsAuthReady(true);
-        });
-      }
-    });
-
-    return () => unsubscribeAuth();
+    // The app uses a custom authentication system (Auth.tsx) and stores users in Firestore.
+    // Firebase Auth (signInAnonymously) is not required since Firestore rules are open.
+    setIsAuthReady(true);
   }, []);
 
   useEffect(() => {
@@ -45,7 +33,7 @@ export default function App() {
       const unsubscribe = onSnapshot(userRef, (docSnap) => {
         if (docSnap.exists()) {
           const updatedUser = docSnap.data() as User;
-          if (updatedUser.status === 'active') {
+          if (updatedUser.status === 'active' || updatedUser.status === 'expired') {
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
           } else {

@@ -44,16 +44,21 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     return () => unsubscribe();
   }, [initialUser.id]);
 
-  const handleAnalyze = async () => {
-    if (user.tokens <= 0) return;
+  const handleAnalyze = async (): Promise<boolean> => {
+    if (user.tokens < 500 || (user.date_expiration && Date.now() > user.date_expiration)) {
+      alert("Tokens expirés ou insuffisants. Veuillez recharger.");
+      return false;
+    }
     
     try {
       const userRef = doc(db, 'users', user.id);
       await updateDoc(userRef, {
-        tokens: increment(-1)
+        tokens: increment(-500)
       });
+      return true;
     } catch (err) {
       console.error('Failed to deduct token', err);
+      return false;
     }
   };
 
@@ -77,15 +82,21 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
   };
 
   const renderDateHeader = () => {
-    if (!virtualTime) return null;
-    const now = virtualTime.currentTime;
+    const now = new Date();
     const monthYear = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const dayDate = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     
     return (
-      <div className="bg-[#1e293b] p-3 text-center border-b border-slate-800">
-        <h2 className="text-lg font-bold text-white capitalize">{monthYear}</h2>
-        <p className="text-[#2dd4bf] font-medium text-xs capitalize">{dayDate}</p>
+      <div className="bg-[#1e293b] p-3 text-center border-b border-slate-800 flex justify-between items-center">
+        <div className="text-left">
+          <h2 className="text-lg font-bold text-white capitalize">{monthYear}</h2>
+          <p className="text-[#2dd4bf] font-medium text-xs capitalize">{dayDate}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-xl font-bold text-[#eab308]">{time}</div>
+          <div className="text-[10px] text-slate-400 uppercase">Heure locale</div>
+        </div>
       </div>
     );
   };
@@ -345,6 +356,45 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     );
   };
 
+  const getRemainingTime = () => {
+    if (!user.date_expiration) return null;
+    const diff = user.date_expiration - Date.now();
+    if (diff <= 0) return 'Expiré';
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / 1000 / 60) % 60);
+    
+    if (days > 0) return `${days}j ${hours}h ${minutes}min`;
+    if (hours > 0) return `${hours}h ${minutes}min`;
+    return `${minutes}min`;
+  };
+
+  // Continuous expiration check
+  useEffect(() => {
+    const checkExpiration = () => {
+      if (user.date_expiration && Date.now() > user.date_expiration) {
+        if (user.tokens > 0 || (user.status !== 'expired' && user.status !== 'inactive')) {
+          try {
+            const userRef = doc(db, 'users', user.id);
+            const updates: any = { tokens: 0 };
+            if (user.status !== 'inactive') {
+              updates.status = 'expired';
+            }
+            updateDoc(userRef, updates);
+          } catch (err) {
+            console.error('Failed to expire tokens', err);
+          }
+        }
+      }
+    };
+
+    const interval = setInterval(checkExpiration, 60000); // Check every minute
+    checkExpiration(); // Check immediately on mount
+
+    return () => clearInterval(interval);
+  }, [user.date_expiration, user.tokens, user.status, user.id]);
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-300 flex flex-col font-sans">
       {/* Header */}
@@ -356,9 +406,16 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
           <h1 className="text-lg font-bold text-white">Betting Tips</h1>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
-            <Coins className="w-3.5 h-3.5 text-[#eab308]" />
-            <span className="font-bold text-white text-sm">{user.tokens}</span>
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
+              <Coins className="w-3.5 h-3.5 text-[#eab308]" />
+              <span className="font-bold text-white text-sm">{user.tokens}</span>
+            </div>
+            {user.date_expiration && (
+              <div className={`text-[9px] font-bold mt-0.5 ${Date.now() > user.date_expiration ? 'text-red-400' : 'text-[#2dd4bf]'}`}>
+                {getRemainingTime()}
+              </div>
+            )}
           </div>
           <button onClick={() => setShowCart(true)} className="relative p-1.5 hover:bg-slate-800 rounded-full transition-colors">
             <ShoppingCart className="w-5 h-5 text-[#eab308]" />

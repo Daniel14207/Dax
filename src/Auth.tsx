@@ -68,13 +68,21 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
         }
 
         const newId = `CLT-${Math.floor(100000 + Math.random() * 900000)}`;
+        const now = new Date();
+        const formattedDate = now.getFullYear() + '-' + 
+                              String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                              String(now.getDate()).padStart(2, '0') + ' ' + 
+                              String(now.getHours()).padStart(2, '0') + ':' + 
+                              String(now.getMinutes()).padStart(2, '0');
+
         const newClient: User = {
           id: newId,
           phone,
           password,
           tokens: 0,
+          date_inscription: formattedDate,
           status: 'active',
-          createdAt: new Date().toISOString()
+          createdAt: now.toISOString()
         };
         
         await setDoc(doc(db, 'users', newId), newClient);

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { VirtualAnalysisResult } from '../types';
 import { Save, Search, Loader2, Trash2, Clock, Flame, BarChart3, Upload, Image as ImageIcon, X, Copy, CheckCircle, TrendingUp, ShieldCheck } from 'lucide-react';
 import { LEAGUES, TEAMS_BY_LEAGUE, getTeamLogo } from '../data';
+import Tesseract from 'tesseract.js';
 
 interface Props {
   userTokens: number;
-  onAnalyze: () => void;
+  onAnalyze: () => Promise<boolean> | boolean;
 }
 
 export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
@@ -70,9 +71,250 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
     }, 2000);
   };
 
-  const handleAnalyze = () => {
-    if (userTokens <= 0) {
-      showToast('Tokens insuffisants');
+  const preprocessImage = (imageUrl: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(imageUrl);
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // Mild contrast and grayscale to avoid washing out white text on colored backgrounds
+        const contrast = 1.2; 
+        const intercept = 128 * (1 - contrast);
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Grayscale
+          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          
+          // Contrast
+          let val = gray * contrast + intercept;
+          val = Math.max(0, Math.min(255, val));
+          
+          data[i] = val;
+          data[i + 1] = val;
+          data[i + 2] = val;
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(imageUrl);
+      img.src = imageUrl;
+    });
+  };
+
+  const parseOCRText = (text: string) => {
+    const matches: any[] = [];
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      
+      let homeTeam = "";
+      let awayTeam = "";
+      let separator = "vs";
+      let homeOddStr = "";
+      let drawOddStr = "";
+      let awayOddStr = "";
+
+      // 1. Try to match single-line format: Team A vs Team B 1.50 3.40 4.20
+      const singleLineRegex = /^(.*?)\s+(?:vs|v|-|\/)\s+(.*?)\s+(\d+(?:[.,]\d+)?)\s*(?:X|-)?\s*(\d+(?:[.,]\d+)?)\s*(?:2|-)?\s*(\d+(?:[.,]\d+)?)\s*$/i;
+      const singleLineResult = line.match(singleLineRegex);
+
+      if (singleLineResult) {
+        homeTeam = singleLineResult[1].trim();
+        awayTeam = singleLineResult[2].trim();
+        homeOddStr = singleLineResult[3];
+        drawOddStr = singleLineResult[4];
+        awayOddStr = singleLineResult[5];
+      } else {
+        // 2. Try to find 3 odds on the current line. Bet261 might have "1 1.50 X 3.40 2 4.20" or just "1.50 3.40 4.20"
+        const oddsMatches = line.match(/\b(\d{1,3}[.,]\d{1,2})\b/g);
+        
+        if (oddsMatches && oddsMatches.length >= 3) {
+          homeOddStr = oddsMatches[0];
+          drawOddStr = oddsMatches[1];
+          awayOddStr = oddsMatches[2];
+          
+          // Look backwards for team names.
+          if (i >= 2) {
+            const teamA = lines[i - 2];
+            const teamB = lines[i - 1];
+            const isNotOdd = (str: string) => !/^\d+(?:[.,]\d+)?$/.test(str);
+            
+            if (isNotOdd(teamA) && isNotOdd(teamB)) {
+              homeTeam = teamA.trim();
+              awayTeam = teamB.trim();
+            }
+          }
+          
+          if (!homeTeam && i >= 1) {
+            const prevLine = lines[i - 1];
+            const teamsRegex = /^(.*?)\s+(?:vs|v|-|\/)\s+(.*?)$/i;
+            const teamsResult = prevLine.match(teamsRegex);
+            if (teamsResult) {
+              homeTeam = teamsResult[1].trim();
+              awayTeam = teamsResult[2].trim();
+            }
+          }
+        } else {
+          // 3. What if the odds are at the end of the second team's name?
+          const teamBOddsMatches = line.match(/^(.*?)\s+(\d{1,3}[.,]\d{1,2})\s*(?:X|-)?\s*(\d{1,3}[.,]\d{1,2})\s*(?:2|-)?\s*(\d{1,3}[.,]\d{1,2})\s*$/i);
+          if (teamBOddsMatches && i >= 1) {
+            const teamA = lines[i - 1];
+            const isNotOdd = (str: string) => !/^\d+(?:[.,]\d+)?$/.test(str);
+            if (isNotOdd(teamA)) {
+              homeTeam = teamA.trim();
+              awayTeam = teamBOddsMatches[1].trim();
+              homeOddStr = teamBOddsMatches[2];
+              drawOddStr = teamBOddsMatches[3];
+              awayOddStr = teamBOddsMatches[4];
+            }
+          } else {
+            // 4. What if odds are on separate lines?
+            const singleOddRegex = /^\s*(\d{1,3}[.,]\d{1,2})\s*$/;
+            if (i >= 2 && i + 2 < lines.length) {
+               const odd1Match = lines[i].match(singleOddRegex);
+               const odd2Match = lines[i+1].match(singleOddRegex);
+               const odd3Match = lines[i+2].match(singleOddRegex);
+               
+               if (odd1Match && odd2Match && odd3Match) {
+                  const teamA = lines[i - 2];
+                  const teamB = lines[i - 1];
+                  const isNotOdd = (str: string) => !/^\d+(?:[.,]\d+)?$/.test(str);
+                  if (isNotOdd(teamA) && isNotOdd(teamB)) {
+                    homeTeam = teamA.trim();
+                    awayTeam = teamB.trim();
+                    homeOddStr = odd1Match[1];
+                    drawOddStr = odd2Match[1];
+                    awayOddStr = odd3Match[1];
+                    i += 2; // skip the next two odd lines
+                  }
+               }
+            }
+          }
+        }
+      }
+
+      // 5. Fallback: look for "Team A - Team B" and then scan next few lines for 3 odds.
+      if (!homeTeam) {
+        const teamsRegex = /^(.*?)\s+(?:vs|v|-|\/)\s+(.*?)$/i;
+        const teamsResult = line.match(teamsRegex);
+        if (teamsResult) {
+           for (let j = 1; j <= 3 && i + j < lines.length; j++) {
+              const aheadLine = lines[i + j];
+              const oddsMatches = aheadLine.match(/\b(\d{1,3}[.,]\d{1,2})\b/g);
+              if (oddsMatches && oddsMatches.length >= 3) {
+                 homeTeam = teamsResult[1].trim();
+                 awayTeam = teamsResult[2].trim();
+                 homeOddStr = oddsMatches[0];
+                 drawOddStr = oddsMatches[1];
+                 awayOddStr = oddsMatches[2];
+                 i += j;
+                 break;
+              }
+           }
+        }
+      }
+
+      if (homeTeam && awayTeam && homeOddStr && drawOddStr && awayOddStr) {
+        homeTeam = homeTeam.replace(/^[^a-zA-Z0-9À-ÿ\s]+|[^a-zA-Z0-9À-ÿ\s]+$/g, '').trim();
+        awayTeam = awayTeam.replace(/^[^a-zA-Z0-9À-ÿ\s]+|[^a-zA-Z0-9À-ÿ\s]+$/g, '').trim();
+
+        const invalidKeywords = ['mi-tps', 'double chance', '1x2', 'score', 'total', 'buts', 'handicap', 'over', 'under', 'ticket', 'paris', 'mise', 'connexion', 'inscription', 'accueil', 'sport', 'direct', 'casino'];
+        const isInvalid = invalidKeywords.some(kw => 
+          homeTeam.toLowerCase() === kw || awayTeam.toLowerCase() === kw || homeTeam.toLowerCase().includes('bet261') || awayTeam.toLowerCase().includes('bet261')
+        );
+
+        if (isInvalid || homeTeam.length < 2 || awayTeam.length < 2) {
+          continue;
+        }
+
+        const homeOdd = parseFloat(homeOddStr.replace(/\s+/g, '').replace(',', '.'));
+        const drawOdd = parseFloat(drawOddStr.replace(/\s+/g, '').replace(',', '.'));
+        const awayOdd = parseFloat(awayOddStr.replace(/\s+/g, '').replace(',', '.'));
+
+        if (isNaN(homeOdd) || isNaN(drawOdd) || isNaN(awayOdd) || homeOdd === 0 || drawOdd === 0 || awayOdd === 0) {
+          continue;
+        }
+
+        const originalMatchString = `${homeTeam} ${separator} ${awayTeam}`;
+        
+        const highOdds = [];
+        if (homeOdd >= 10) highOdds.push({ type: '1X2', pick: '1', odd: homeOdd, comment: 'Outsider détecté' });
+        if (awayOdd >= 10) highOdds.push({ type: '1X2', pick: '2', odd: awayOdd, comment: 'Outsider détecté' });
+
+        matches.push({ homeTeam, awayTeam, originalMatchString, homeOdd, drawOdd, awayOdd, highOdds });
+      }
+    }
+    
+    // 6. Ultimate Fallback: If no matches found, try to pair any 2 strings with any 3 odds found sequentially
+    if (matches.length === 0) {
+       let currentTeams: string[] = [];
+       for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const oddsMatches = line.match(/\b(\d{1,3}[.,]\d{1,2})\b/g);
+          
+          if (oddsMatches && oddsMatches.length >= 3) {
+             if (currentTeams.length >= 2) {
+                const homeTeam = currentTeams[currentTeams.length - 2].replace(/^[^a-zA-Z0-9À-ÿ\s]+|[^a-zA-Z0-9À-ÿ\s]+$/g, '').trim();
+                const awayTeam = currentTeams[currentTeams.length - 1].replace(/^[^a-zA-Z0-9À-ÿ\s]+|[^a-zA-Z0-9À-ÿ\s]+$/g, '').trim();
+                
+                if (homeTeam.length > 2 && awayTeam.length > 2) {
+                    const homeOdd = parseFloat(oddsMatches[0].replace(',', '.'));
+                    const drawOdd = parseFloat(oddsMatches[1].replace(',', '.'));
+                    const awayOdd = parseFloat(oddsMatches[2].replace(',', '.'));
+                    
+                    if (!isNaN(homeOdd) && !isNaN(drawOdd) && !isNaN(awayOdd)) {
+                       const highOdds = [];
+                       if (homeOdd >= 10) highOdds.push({ type: '1X2', pick: '1', odd: homeOdd, comment: 'Outsider détecté' });
+                       if (awayOdd >= 10) highOdds.push({ type: '1X2', pick: '2', odd: awayOdd, comment: 'Outsider détecté' });
+
+                       matches.push({
+                          homeTeam,
+                          awayTeam,
+                          originalMatchString: `${homeTeam} vs ${awayTeam}`,
+                          homeOdd,
+                          drawOdd,
+                          awayOdd,
+                          highOdds
+                       });
+                    }
+                }
+                currentTeams = []; // Reset
+             }
+          } else if (!/^\d+(?:[.,]\d+)?$/.test(line) && line.length > 2) {
+             // It's a string, might be a team name
+             const invalidKeywords = ['mi-tps', 'double chance', '1x2', 'score', 'total', 'buts', 'handicap', 'over', 'under', 'ticket', 'paris', 'mise', 'connexion', 'inscription', 'accueil', 'sport', 'direct', 'casino'];
+             const isInvalid = invalidKeywords.some(kw => line.toLowerCase() === kw || line.toLowerCase().includes('bet261'));
+             if (!isInvalid) {
+                 currentTeams.push(line.trim());
+             }
+          }
+       }
+    }
+
+    return matches;
+  };
+
+  const handleAnalyze = async () => {
+    if (userTokens < 500) {
+      showToast('Tokens expirés ou insuffisants. Veuillez recharger.');
       return;
     }
     if (!isHistorySaved) {
@@ -84,123 +326,117 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
       return;
     }
 
-    onAnalyze(); // Deduct token
-    setIsAnalyzing(true);
+    const canAnalyze = await onAnalyze(); // Deduct token and check expiration
+    if (canAnalyze === false) {
+      return;
+    }
 
-    // Analyse locale ultra-rapide (< 1s)
-    setTimeout(() => {
-      setIsAnalyzing(false);
+    setIsAnalyzing(true);
+    showToast('Analyse locale en cours (OCR)...');
+
+    try {
+      let allMatches: any[] = [];
       
-      const batchId = Math.random().toString(36).substr(2, 9);
-      const newResults: VirtualAnalysisResult[] = [];
-      
-      // Simulation Extraction : On prend les équipes de la ligue sélectionnée
-      const teamNames = [...(TEAMS_BY_LEAGUE[selectedLeague] || TEAMS_BY_LEAGUE['eng'])];
-      
-      // Mélanger les équipes pour simuler les matchs lus sur l'image
-      for (let i = teamNames.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [teamNames[i], teamNames[j]] = [teamNames[j], teamNames[i]];
+      for (const imageUrl of matchImages) {
+        const processedImageUrl = await preprocessImage(imageUrl);
+        const { data: { text } } = await Tesseract.recognize(
+          processedImageUrl,
+          'eng',
+          { logger: m => console.log(m) }
+        );
+        
+        const extracted = parseOCRText(text);
+        allMatches = [...allMatches, ...extracted];
       }
       
-      // Créer les matchs (toutes les équipes jouent, donc teamNames.length / 2 matchs)
-      const numMatches = Math.floor(teamNames.length / 2);
+      if (allMatches.length === 0) {
+        showToast("Aucune donnée valide détectée");
+        setIsAnalyzing(false);
+        return;
+      }
       
-      for (let i = 0; i < numMatches; i++) {
-        const homeTeam = teamNames[i * 2];
-        const awayTeam = teamNames[i * 2 + 1];
+      const batchId = Math.random().toString(36).substr(2, 9);
+      const newResults: VirtualAnalysisResult[] = allMatches.map(match => {
+        const { homeTeam, awayTeam, originalMatchString, homeOdd, drawOdd, awayOdd, highOdds } = match;
         
-        // 1. Génération de cotes réalistes (Simulation de lecture d'image)
-        const matchType = Math.random();
-        let homeOdd, drawOdd, awayOdd;
+        // Calculate probabilities: prob = 1 / cote
+        const prob1 = 1 / homeOdd;
+        const probX = 1 / drawOdd;
+        const prob2 = 1 / awayOdd;
         
-        if (matchType < 0.4) {
-          // Favori Domicile Fort
-          homeOdd = 1.10 + Math.random() * 0.40; // 1.10 - 1.50
-          drawOdd = 3.50 + Math.random() * 2.50; // 3.50 - 6.00
-          awayOdd = 6.00 + Math.random() * 9.00; // 6.00 - 15.00
-        } else if (matchType < 0.7) {
-          // Match Équilibré
-          homeOdd = 2.10 + Math.random() * 0.70; // 2.10 - 2.80
-          drawOdd = 2.80 + Math.random() * 0.50; // 2.80 - 3.30
-          awayOdd = 2.30 + Math.random() * 0.70; // 2.30 - 3.00
-        } else {
-          // Favori Extérieur Fort
-          homeOdd = 5.00 + Math.random() * 7.00; // 5.00 - 12.00
-          drawOdd = 3.50 + Math.random() * 1.50; // 3.50 - 5.00
-          awayOdd = 1.20 + Math.random() * 0.50; // 1.20 - 1.70
-        }
-
-        // Arrondir à 2 décimales
-        homeOdd = Number(homeOdd.toFixed(2));
-        drawOdd = Number(drawOdd.toFixed(2));
-        awayOdd = Number(awayOdd.toFixed(2));
-
-        // 2. Logique Probabiliste
+        // Normalize
+        const totalProb = prob1 + probX + prob2;
+        const normProb1 = prob1 / totalProb;
+        const normProbX = probX / totalProb;
+        const normProb2 = prob2 / totalProb;
+        
+        // Determine 1/X/2 based on highest probability
+        let ft1x2 = 'X';
+        const maxProb = Math.max(normProb1, normProbX, normProb2);
+        if (maxProb === normProb1) ft1x2 = '1';
+        else if (maxProb === normProb2) ft1x2 = '2';
+        
+        // Confidence is maxProb * 100
+        let confidence = Math.round(maxProb * 100);
+        
         const minOdd = Math.min(homeOdd, drawOdd, awayOdd);
         const maxOdd = Math.max(homeOdd, drawOdd, awayOdd);
         
-        // 1X2 : Plus petite cote
-        let ft1x2 = 'X';
-        if (minOdd === homeOdd) ft1x2 = '1';
-        else if (minOdd === awayOdd) ft1x2 = '2';
-
+        // Deterministic pseudo-random based on team names and odds
+        const hashStr = homeTeam + awayTeam + homeOdd.toString();
+        let hash = 0;
+        for (let i = 0; i < hashStr.length; i++) {
+          hash = ((hash << 5) - hash) + hashStr.charCodeAt(i);
+          hash |= 0;
+        }
+        const pseudoRandom = Math.abs(hash) / 2147483648; // 0 to 1
+        
         // Double Chance : Favori + Nul
         let dc = '1X';
         if (ft1x2 === '1') dc = '1X';
         else if (ft1x2 === '2') dc = 'X2';
-        else dc = '12'; // Si match très serré, on peut tenter 12
+        else dc = '12';
 
         // Score Exact basé sur la force du favori
         let exactScore = '1-1';
         if (minOdd < 1.50) {
-          // Favori fort
-          exactScore = ft1x2 === '1' ? (Math.random() > 0.5 ? '2-0' : '3-0') : (Math.random() > 0.5 ? '0-2' : '0-3');
+          exactScore = ft1x2 === '1' ? (pseudoRandom > 0.5 ? '2-0' : '3-0') : (pseudoRandom > 0.5 ? '0-2' : '0-3');
         } else if (minOdd < 2.00) {
-          // Favori moyen
           exactScore = ft1x2 === '1' ? '2-1' : '1-2';
         } else {
-          // Match équilibré ou outsider possible
-          exactScore = Math.random() > 0.5 ? '1-1' : (ft1x2 === '1' ? '1-0' : '0-1');
+          exactScore = pseudoRandom > 0.5 ? '1-1' : (ft1x2 === '1' ? '1-0' : '0-1');
         }
 
-        // Hot Match
         const isHotMatch = minOdd < 1.50 || (maxOdd - minOdd > 3);
-
-        // Confidence % (1 / cote_favori) normalisé
-        // Ex: 1.20 -> 1/1.20 = 0.83 -> 83%
-        let confidence = Math.round((1 / minOdd) * 100);
-        // Ajustement historique (Simulation : on ajoute un petit bonus si l'historique valide)
-        confidence = Math.min(99, confidence + Math.floor(Math.random() * 5));
-
-        // 3. Extraction Cotes +10 (Uniquement si lues sur l'image)
-        const extractedHighOdds = [];
-        // Si une des cotes 1X2 est > 10
-        if (homeOdd > 10) {
-          extractedHighOdds.push({ type: '1X2', pick: '1', odd: homeOdd.toFixed(2), comment: 'Outsider détecté sur l\'image' });
+        
+        let analysis = '';
+        if (minOdd < 1.50) {
+          analysis = `Cote très basse pour le favori (${minOdd.toFixed(2)}), forte probabilité de victoire.`;
+        } else if (minOdd < 2.00) {
+          analysis = `Match avec un léger avantage, mais qui reste serré.`;
+        } else if (Math.abs(homeOdd - awayOdd) < 0.5) {
+          analysis = `Match très équilibré, les cotes sont proches. Possibilité de match nul.`;
+        } else {
+          analysis = `Cotes élevées, match potentiellement imprévisible.`;
         }
-        if (awayOdd > 10) {
-          extractedHighOdds.push({ type: '1X2', pick: '2', odd: awayOdd.toFixed(2), comment: 'Outsider détecté sur l\'image' });
-        }
-        // Simulation de lecture d'une cote de score exact > 10 sur l'image
-        if (Math.random() > 0.6) {
-          const crazyScore = ft1x2 === '1' ? '4-1' : '1-4';
-          const crazyOdd = (12 + Math.random() * 15).toFixed(2);
-          extractedHighOdds.push({ type: 'Score Exact', pick: crazyScore, odd: crazyOdd, comment: 'Cote lue sur l\'image' });
-        }
+        
+        // Use high odds exactly as parsed from the image
+        const finalHighOdds = [...(highOdds || [])];
 
-        newResults.push({
+        return {
           batchId,
           matchId: Math.random().toString(36).substr(2, 9),
           leagueId: selectedLeague,
           time: matchTime,
           homeTeam,
           awayTeam,
+          originalMatchString,
           isHotMatch,
           confidence,
           extractedOdds: { home: homeOdd, draw: drawOdd, away: awayOdd },
-          highOdds: extractedHighOdds,
+          highOdds: finalHighOdds,
           results: {
+            analysis,
             ft1x2,
             ht1x2: ft1x2 === '1' ? '1' : (ft1x2 === '2' ? '2' : 'X'),
             dc,
@@ -213,21 +449,26 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
             ou35: minOdd < 1.30 ? 'Over' : 'Under',
             htft: ft1x2 === '1' ? '1/1' : (ft1x2 === '2' ? '2/2' : 'X/X'),
             totalGoals: minOdd < 1.50 ? '3' : '2',
-            ggng: minOdd < 1.60 ? 'NG' : 'GG', // Si favori fort, NG probable
+            ggng: minOdd < 1.60 ? 'NG' : 'GG',
             btts: minOdd < 1.60 ? 'No' : 'Yes',
             teamTotals: ft1x2 === '1' ? 'H: 2 | A: 0' : (ft1x2 === '2' ? 'H: 0 | A: 2' : 'H: 1 | A: 1'),
-            oddEven: Math.random() > 0.5 ? 'Odd' : 'Even',
-            firstGoalMin: `${Math.floor(Math.random() * 30) + 5}'`,
+            oddEven: pseudoRandom > 0.5 ? 'Odd' : 'Even',
+            firstGoalMin: `${Math.floor(pseudoRandom * 30) + 5}'`,
             multiGoals: minOdd < 1.50 ? '2-4' : '1-3',
             ftts: ft1x2 === '1' ? 'Home' : (ft1x2 === '2' ? 'Away' : 'None')
           }
-        });
-      }
-
+        };
+      });
+      
       setResults(newResults);
       localStorage.setItem('virtualAnalyses', JSON.stringify(newResults));
       showToast('Analyse terminée avec succès !');
-    }, 800); // Temps d'analyse < 1 seconde
+    } catch (error) {
+      console.error(error);
+      showToast("Erreur lors de l'analyse de l'image.");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const clearResults = () => {
@@ -236,7 +477,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
   };
 
   const handleCopy = (res: VirtualAnalysisResult) => {
-    const text = `⚽ ${res.homeTeam} vs ${res.awayTeam}\n🕒 ${res.time}\n🏆 ${LEAGUES.find(l => l.id === res.leagueId)?.name}\n\n🎯 Pronostic: ${res.results.ft1x2}\n🔥 Confiance: ${res.confidence}%\n\n👉 Double Chance: ${res.results.dc}\n👉 O/U 2.5: ${res.results.ou25}\n👉 GG/NG: ${res.results.ggng}`;
+    const text = `Match : ${res.originalMatchString || `${res.homeTeam} vs ${res.awayTeam}`}\nCotes : ${res.extractedOdds.home.toFixed(2)} | ${res.extractedOdds.draw.toFixed(2)} | ${res.extractedOdds.away.toFixed(2)}\n\nAnalyse :\n${res.results.analysis}\n\nRésultat probable :\n${res.results.ft1x2 === '1' ? res.homeTeam : res.results.ft1x2 === '2' ? res.awayTeam : 'Match Nul'}\nScore exact :\n${res.results.exactScore}`;
     navigator.clipboard.writeText(text);
     setCopiedId(res.matchId);
     setTimeout(() => setCopiedId(null), 2000);
@@ -250,32 +491,54 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
 
   // Generate VIP Multiples
   const generateMultiples = () => {
-    if (results.length < 2) return [];
+    if (results.length < 3) return [];
     const multiples = [];
-    const numMultiples = Math.floor(Math.random() * 11) + 10; // 10 to 20
+    let currentMultipleId = 0;
     
-    // Trier par confiance (les plus sûrs en premier)
-    const sortedResults = [...results].sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-    
-    for (let i = 0; i < numMultiples; i++) {
-      const numMatches = Math.min(3, sortedResults.length); // Up to 3 matches per multiple
-      // Prendre des matchs parmi les meilleurs (haute confiance, faible cote)
-      const selectedMatches = [...sortedResults].sort(() => 0.5 - Math.random()).slice(0, numMatches);
-      
-      let totalOdds = 1;
-      const picks = selectedMatches.map(m => {
-        let odd = 1.5; // Default fallback
-        if (m.extractedOdds) {
-          if (m.results.ft1x2 === '1') odd = m.extractedOdds.home;
-          else if (m.results.ft1x2 === 'X') odd = m.extractedOdds.draw;
-          else if (m.results.ft1x2 === '2') odd = m.extractedOdds.away;
+    const getOdd = (match: any) => {
+      if (!match.extractedOdds) return 1.5;
+      return match.results.ft1x2 === '1' ? match.extractedOdds.home : (match.results.ft1x2 === 'X' ? match.extractedOdds.draw : match.extractedOdds.away);
+    };
+
+    const combinations = [];
+    for (let i = 0; i < results.length; i++) {
+        for (let j = i + 1; j < results.length; j++) {
+            for (let k = j + 1; k < results.length; k++) {
+                combinations.push([results[i], results[j], results[k]]);
+            }
         }
-        totalOdds *= odd;
-        return { match: `${m.homeTeam} vs ${m.awayTeam}`, pick: m.results.ft1x2, odd };
-      });
-      
-      multiples.push({ id: i, picks, totalOdds: totalOdds.toFixed(2) });
     }
+
+    // Sort combinations by total odds descending to get the best ones first
+    combinations.sort((a, b) => {
+        const oddA = getOdd(a[0]) * getOdd(a[1]) * getOdd(a[2]);
+        const oddB = getOdd(b[0]) * getOdd(b[1]) * getOdd(b[2]);
+        return oddB - oddA;
+    });
+
+    // Take up to 20 combinations
+    const selectedCombinations = combinations.slice(0, 20);
+
+    for (const combo of selectedCombinations) {
+        const m1 = combo[0];
+        const m2 = combo[1];
+        const m3 = combo[2];
+        
+        const odd1 = getOdd(m1);
+        const odd2 = getOdd(m2);
+        const odd3 = getOdd(m3);
+        
+        multiples.push({
+            id: currentMultipleId++,
+            picks: [
+                { match: m1.originalMatchString || `${m1.homeTeam} vs ${m1.awayTeam}`, pick: m1.results.ft1x2, odd: odd1 },
+                { match: m2.originalMatchString || `${m2.homeTeam} vs ${m2.awayTeam}`, pick: m2.results.ft1x2, odd: odd2 },
+                { match: m3.originalMatchString || `${m3.homeTeam} vs ${m3.awayTeam}`, pick: m3.results.ft1x2, odd: odd3 }
+            ],
+            totalOdds: (odd1 * odd2 * odd3).toFixed(2)
+        });
+    }
+
     return multiples;
   };
 
@@ -289,7 +552,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
         match.highOdds.forEach((ho, idx) => {
           boosts.push({
             id: `${match.matchId}-${idx}`,
-            match: `${match.homeTeam} vs ${match.awayTeam}`,
+            match: match.originalMatchString || `${match.homeTeam} vs ${match.awayTeam}`,
             pick: ho.pick,
             type: ho.type,
             odd: ho.odd,
@@ -457,14 +720,26 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
                   </div>
                   
                   <div className="bg-slate-800 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
-                    <div className="flex-1 flex items-center gap-2">
-                      <img src={getTeamLogo(res.homeTeam, res.leagueId)} alt={res.homeTeam} className="w-6 h-6 object-contain" />
-                      <span className="font-bold text-white text-sm">{res.homeTeam}</span>
+                    <img src={getTeamLogo(res.homeTeam, res.leagueId)} alt={res.homeTeam} className="w-6 h-6 object-contain" />
+                    <span className="font-bold text-white text-sm flex-1 text-center px-2">
+                      {res.originalMatchString || `${res.homeTeam} vs ${res.awayTeam}`}
+                    </span>
+                    <img src={getTeamLogo(res.awayTeam, res.leagueId)} alt={res.awayTeam} className="w-6 h-6 object-contain" />
+                  </div>
+                  
+                  {/* Display the extracted odds to prove they match the screenshot exactly */}
+                  <div className="bg-slate-800/50 px-4 py-2 border-b border-slate-700 flex justify-center gap-8">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-slate-500 font-bold">1</span>
+                      <span className="text-sm font-bold text-white">{res.extractedOdds.home.toFixed(2)}</span>
                     </div>
-                    <span className="text-slate-500 font-bold px-2">VS</span>
-                    <div className="flex-1 flex items-center gap-2 justify-end">
-                      <span className="font-bold text-white text-sm text-right">{res.awayTeam}</span>
-                      <img src={getTeamLogo(res.awayTeam, res.leagueId)} alt={res.awayTeam} className="w-6 h-6 object-contain" />
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-slate-500 font-bold">X</span>
+                      <span className="text-sm font-bold text-white">{res.extractedOdds.draw.toFixed(2)}</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-slate-500 font-bold">2</span>
+                      <span className="text-sm font-bold text-white">{res.extractedOdds.away.toFixed(2)}</span>
                     </div>
                   </div>
                   
@@ -477,26 +752,35 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
                     </div>
                   </div>
                   
-                  <div className="p-4 grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">1X2:</span> <span className="font-bold text-[#2dd4bf]">{res.results.ft1x2}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">1X2 MT:</span> <span className="font-bold text-white">{res.results.ht1x2}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">DC:</span> <span className="font-bold text-white">{res.results.dc}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">DC MT:</span> <span className="font-bold text-white">{res.results.dcHt}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">Score Exact:</span> <span className="font-bold text-[#eab308]">{res.results.exactScore}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">Score MT:</span> <span className="font-bold text-white">{res.results.htScore}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">O/U 0.5:</span> <span className="font-bold text-white">{res.results.ou05}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">O/U 1.5:</span> <span className="font-bold text-white">{res.results.ou15}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">O/U 2.5:</span> <span className="font-bold text-white">{res.results.ou25}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">O/U 3.5:</span> <span className="font-bold text-white">{res.results.ou35}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">HT/FT:</span> <span className="font-bold text-[#2dd4bf]">{res.results.htft}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">Total Buts:</span> <span className="font-bold text-white">{res.results.totalGoals}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">GG/NG:</span> <span className="font-bold text-white">{res.results.ggng}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">BTTS:</span> <span className="font-bold text-[#eab308]">{res.results.btts}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">Team Totals:</span> <span className="font-bold text-white">{res.results.teamTotals}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">Pair/Impair:</span> <span className="font-bold text-white">{res.results.oddEven}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">1er But Min:</span> <span className="font-bold text-white">{res.results.firstGoalMin}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded"><span className="text-slate-400">Multi-buts:</span> <span className="font-bold text-white">{res.results.multiGoals}</span></div>
-                    <div className="flex justify-between bg-slate-800/50 p-2 rounded col-span-2"><span className="text-slate-400">FTTS (First Team To Score):</span> <span className="font-bold text-[#2dd4bf]">{res.results.ftts}</span></div>
+                  {/* Structure obligatoire pour chaque match */}
+                  <div className="p-4 space-y-3 text-sm">
+                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                      <div className="text-slate-400 mb-1">Match :</div>
+                      <div className="font-bold text-white">{res.originalMatchString || `${res.homeTeam} vs ${res.awayTeam}`}</div>
+                    </div>
+                    
+                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                      <div className="text-slate-400 mb-1">Cotes :</div>
+                      <div className="font-bold text-white">
+                        {res.extractedOdds.home.toFixed(2)} | {res.extractedOdds.draw.toFixed(2)} | {res.extractedOdds.away.toFixed(2)}
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                      <div className="text-slate-400 mb-1">Analyse :</div>
+                      <div className="font-medium text-white">{res.results.analysis}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                        <div className="text-slate-400 mb-1">Résultat probable :</div>
+                        <div className="font-bold text-[#2dd4bf]">{res.results.ft1x2 === '1' ? res.homeTeam : res.results.ft1x2 === '2' ? res.awayTeam : 'Match Nul'}</div>
+                      </div>
+                      <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                        <div className="text-slate-400 mb-1">Score exact :</div>
+                        <div className="font-bold text-[#eab308]">{res.results.exactScore}</div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* COPY BUTTON */}
@@ -522,24 +806,25 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
             <div className="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/30 rounded-xl p-4">
               <h4 className="text-emerald-400 font-bold flex items-center gap-2 mb-3">
                 <ShieldCheck className="w-5 h-5" />
-                MULTIPLE VIP
+                MULTIPLE VIP (Cote {'>'}= 10)
               </h4>
               <div className="space-y-3">
                 {multiples.map(mult => (
                   <div key={mult.id} className="bg-slate-900/50 p-3 rounded-lg border border-emerald-500/20">
-                    <div className="flex justify-between items-center mb-2 border-b border-slate-700/50 pb-2">
-                      <span className="text-emerald-400 font-bold text-sm">Ticket #{mult.id + 1}</span>
-                      <span className="bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded text-xs border border-emerald-500/30">
-                        Cote: {mult.totalOdds}
-                      </span>
+                    <div className="mb-2 border-b border-slate-700/50 pb-2">
+                      <span className="text-emerald-400 font-bold text-sm">Multiple {mult.id + 1}</span>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2 mb-3">
                       {mult.picks.map((pick, idx) => (
-                        <div key={idx} className="flex justify-between text-xs">
-                          <span className="text-slate-300 truncate pr-2">{pick.match}</span>
-                          <span className="text-emerald-400 font-bold whitespace-nowrap">{pick.pick} ({pick.odd})</span>
+                        <div key={idx} className="text-sm text-slate-300 font-medium flex justify-between">
+                          <span>{pick.match} : {pick.pick}</span>
+                          <span className="text-emerald-400">{pick.odd.toFixed(2)}</span>
                         </div>
                       ))}
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
+                      <span className="text-slate-400 text-sm font-bold">Total :</span>
+                      <span className="text-emerald-400 font-bold text-lg">{mult.totalOdds}</span>
                     </div>
                   </div>
                 ))}
@@ -552,7 +837,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze }: Props) {
             <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/30 rounded-xl p-4">
               <h4 className="text-red-400 font-bold flex items-center gap-2 mb-3">
                 <TrendingUp className="w-5 h-5" />
-                COTE CIBLE +10 (Risque Élevé)
+                Cote plus de 10 cible dans le Capture Match
               </h4>
               <div className="space-y-2">
                 {coteBoosts.map((boost: any) => (

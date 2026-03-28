@@ -39,10 +39,23 @@ export default function Admin({ onExit }: AdminProps) {
     const amount = parseInt(tokenAmount, 10);
     if (isNaN(amount) || amount <= 0) return;
 
+    let durationMs = 0;
+    if (amount === 5000) durationMs = 3.5 * 24 * 60 * 60 * 1000;
+    else if (amount === 10000) durationMs = 7 * 24 * 60 * 60 * 1000;
+    else if (amount === 40000) durationMs = 30 * 24 * 60 * 60 * 1000;
+    else {
+      durationMs = (amount / 5000) * 3.5 * 24 * 60 * 60 * 1000;
+    }
+
+    const now = Date.now();
+
     try {
       const userRef = doc(db, 'users', selectedUser.id);
       await updateDoc(userRef, {
-        tokens: selectedUser.tokens + amount
+        tokens: selectedUser.tokens + amount,
+        date_activation: now,
+        date_expiration: now + durationMs,
+        status: 'active'
       });
       
       setSelectedUser(null);
@@ -76,6 +89,17 @@ export default function Admin({ onExit }: AdminProps) {
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const isExpired = (user: User) => {
+    if (!user.date_expiration) return false;
+    return Date.now() > user.date_expiration;
+  };
+
+  const formatDate = (timestamp?: number) => {
+    if (!timestamp) return '-';
+    const d = new Date(timestamp);
+    return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white flex flex-col relative">
@@ -119,8 +143,26 @@ export default function Admin({ onExit }: AdminProps) {
                     <div className="font-bold text-lg">{user.phone}</div>
                     <div className="text-xs text-slate-500 font-mono mt-1">ID: {user.id}</div>
                   </div>
-                  <div className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {user.status}
+                  <div className={`px-2 py-1 rounded text-xs font-bold uppercase ${
+                    user.status === 'inactive' ? 'bg-slate-500/20 text-slate-400' :
+                    (user.status === 'expired' || isExpired(user)) ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                  }`}>
+                    {user.status === 'inactive' ? 'Inactif' : (user.status === 'expired' || isExpired(user)) ? 'Expiré' : 'Actif'}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 bg-slate-800/30 p-3 rounded-lg">
+                  <div>
+                    <span className="block text-slate-500 mb-1">Inscription</span>
+                    <span className="text-white">{user.date_inscription || new Date(user.createdAt).toLocaleString('fr-FR')}</span>
+                  </div>
+                  <div>
+                    <span className="block text-slate-500 mb-1">Activation</span>
+                    <span className="text-white">{formatDate(user.date_activation)}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="block text-slate-500 mb-1">Expiration</span>
+                    <span className="text-[#2dd4bf] font-medium">{formatDate(user.date_expiration)}</span>
                   </div>
                 </div>
 

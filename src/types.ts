@@ -3,7 +3,10 @@ export interface User {
   phone: string;
   password: string;
   tokens: number;
-  status: 'active' | 'inactive';
+  date_activation?: number;
+  date_expiration?: number;
+  date_inscription?: string;
+  status: 'active' | 'inactive' | 'expired';
   createdAt: string;
 }
 
@@ -44,9 +47,22 @@ export interface VirtualAnalysisResult {
   time: string;
   homeTeam: string;
   awayTeam: string;
+  originalMatchString?: string;
   isHotMatch?: boolean;
   confidence?: number;
+  extractedOdds?: {
+    home: number;
+    draw: number;
+    away: number;
+  };
+  highOdds?: {
+    type: string;
+    pick: string;
+    odd: string;
+    comment: string;
+  }[];
   results: {
+    analysis?: string;
     ft1x2: string;
     ht1x2: string;
     dc: string;
@@ -66,17 +82,6 @@ export interface VirtualAnalysisResult {
     firstGoalMin: string;
     multiGoals: string;
     ftts: string;
-  };
-  highOdds?: {
-    type: string;
-    pick: string;
-    odd: string;
-    comment: string;
-  }[];
-  extractedOdds?: {
-    home: number;
-    draw: number;
-    away: number;
   };
 }
 
