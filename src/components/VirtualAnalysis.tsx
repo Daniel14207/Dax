@@ -374,18 +374,20 @@ FTTS : ${res.results.ftts}`;
         </h3>
         
         <div className="space-y-4 mb-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-3 mb-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 mb-1 uppercase">Ligue</label>
-              <select 
-                value={selectedLeague}
-                onChange={(e) => setSelectedLeague(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] appearance-none"
-              >
+              <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">Ligue</label>
+              <div className="flex flex-wrap gap-2">
                 {LEAGUES.map(l => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
+                  <button
+                    key={l.id}
+                    onClick={() => setSelectedLeague(l.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${selectedLeague === l.id ? 'bg-[#eab308] text-slate-900' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}
+                  >
+                    {l.name}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 mb-1 uppercase">Heure du match</label>
@@ -543,7 +545,7 @@ FTTS : ${res.results.ftts}`;
                   
                   {/* Prediction & Details */}
                   <div className="bg-slate-800/30 p-4 border-t border-slate-700/50">
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-2">
                       <div>
                         <div className="flex items-center gap-1.5 mb-1">
                           <CheckCircle className="w-3.5 h-3.5 text-amber-500" />
@@ -565,24 +567,67 @@ FTTS : ${res.results.ftts}`;
                     </div>
 
                     <div>
-                      <div className="flex items-center gap-1.5 mb-2">
+                      <div className="flex items-center gap-1.5 mb-2 mt-2">
                         <Menu className="w-3 h-3 text-slate-400" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Détails</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Détails Complets</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-700/30 flex justify-between items-center">
-                          <span className="text-[10px] text-slate-500">Double Chance</span>
-                          <span className="text-[11px] font-bold text-slate-300">{res.results.dc}</span>
-                        </div>
-                        <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-700/30 flex justify-between items-center">
-                          <span className="text-[10px] text-slate-500">O/U 2.5</span>
-                          <span className="text-[11px] font-bold text-slate-300">{res.results.ou25}</span>
-                        </div>
-                        <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-700/30 flex justify-between items-center col-span-2">
-                          <span className="text-[10px] text-slate-500">GG/NG</span>
-                          <span className="text-[11px] font-bold text-slate-300">{res.results.ggng}</span>
-                        </div>
-                      </div>
+                      
+                      {(() => {
+                        const totalGoals = res.results.exactScore.split('-').reduce((a, b) => a + parseInt(b), 0);
+                        const dcOdd = res.results.ft1x2 === '1' ? (1 / (1/(res.extractedOdds?.home || 1) + 1/(res.extractedOdds?.draw || 1))).toFixed(2) :
+                                      res.results.ft1x2 === '2' ? (1 / (1/(res.extractedOdds?.away || 1) + 1/(res.extractedOdds?.draw || 1))).toFixed(2) :
+                                      (1 / (1/(res.extractedOdds?.home || 1) + 1/(res.extractedOdds?.away || 1))).toFixed(2);
+                        
+                        return (
+                          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/30 mt-3 space-y-2 text-sm w-full">
+                            <div className="flex justify-between border-b border-slate-800 pb-1">
+                              <span className="text-slate-400">1X2</span>
+                              <span className="font-bold text-white">{res.results.ft1x2} <span className="text-amber-500 text-xs">@{res.results.ft1x2 === '1' ? res.extractedOdds?.home.toFixed(2) : res.results.ft1x2 === '2' ? res.extractedOdds?.away.toFixed(2) : res.extractedOdds?.draw.toFixed(2)}</span></span>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-800 pb-1">
+                              <span className="text-slate-400">Double Chance</span>
+                              <span className="font-bold text-white">{res.results.dc} <span className="text-amber-500 text-xs">@{dcOdd}</span></span>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-800 pb-1">
+                              <span className="text-slate-400">Mi-temps 1X2</span>
+                              <span className="font-bold text-white">{res.results.ht1x2}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-800 pb-1">
+                              <span className="text-slate-400">Mi-temps Double Chance</span>
+                              <span className="font-bold text-white">{res.results.dcHt}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-800 pb-1">
+                              <span className="text-slate-400">Score Exact</span>
+                              <span className="font-bold text-white">{res.results.exactScore}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-800 pb-1">
+                              <span className="text-slate-400">Total Goals</span>
+                              <span className="font-bold text-white">{totalGoals}</span>
+                            </div>
+                            <div className="border-b border-slate-800 pb-2 pt-1">
+                              <span className="text-slate-400 block mb-2">Over/Under</span>
+                              <div className="grid grid-cols-4 gap-2 text-center">
+                                <div className="bg-slate-800 rounded py-1 border border-slate-700"><span className="text-[10px] text-slate-400 block">+0.5</span><span className={totalGoals > 0.5 ? 'text-[#2dd4bf] font-bold' : 'text-red-500 font-bold'}>{totalGoals > 0.5 ? '✔' : '✖'}</span></div>
+                                <div className="bg-slate-800 rounded py-1 border border-slate-700"><span className="text-[10px] text-slate-400 block">+1.5</span><span className={totalGoals > 1.5 ? 'text-[#2dd4bf] font-bold' : 'text-red-500 font-bold'}>{totalGoals > 1.5 ? '✔' : '✖'}</span></div>
+                                <div className="bg-slate-800 rounded py-1 border border-slate-700"><span className="text-[10px] text-slate-400 block">+2.5</span><span className={totalGoals > 2.5 ? 'text-[#2dd4bf] font-bold' : 'text-red-500 font-bold'}>{totalGoals > 2.5 ? '✔' : '✖'}</span></div>
+                                <div className="bg-slate-800 rounded py-1 border border-slate-700"><span className="text-[10px] text-slate-400 block">+3.5</span><span className={totalGoals > 3.5 ? 'text-[#2dd4bf] font-bold' : 'text-red-500 font-bold'}>{totalGoals > 3.5 ? '✔' : '✖'}</span></div>
+                              </div>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-800 pb-1 pt-1">
+                              <span className="text-slate-400">GG/NG</span>
+                              <span className="font-bold text-white">{res.results.ggng}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-800 pb-1">
+                              <span className="text-slate-400">HT/FT</span>
+                              <span className="font-bold text-white">{res.results.htft}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">First goal</span>
+                              <span className="font-bold text-white">{res.results.firstGoalMin}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 

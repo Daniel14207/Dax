@@ -40,11 +40,11 @@ export default function Admin({ onExit }: AdminProps) {
     if (isNaN(amount) || amount <= 0) return;
 
     let durationMs = 0;
-    if (amount === 5000) durationMs = 3.5 * 24 * 60 * 60 * 1000;
-    else if (amount === 10000) durationMs = 7 * 24 * 60 * 60 * 1000;
+    if (amount === 10000) durationMs = 7 * 24 * 60 * 60 * 1000;
     else if (amount === 40000) durationMs = 30 * 24 * 60 * 60 * 1000;
+    else if (amount === 100000) durationMs = 90 * 24 * 60 * 60 * 1000;
     else {
-      durationMs = (amount / 5000) * 3.5 * 24 * 60 * 60 * 1000;
+      durationMs = (amount / 10000) * 7 * 24 * 60 * 60 * 1000;
     }
 
     const now = Date.now();
