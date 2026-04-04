@@ -33,7 +33,7 @@ export default function App() {
       const unsubscribe = onSnapshot(userRef, (docSnap) => {
         if (docSnap.exists()) {
           const updatedUser = docSnap.data() as User;
-          if (updatedUser.status === 'active' || updatedUser.status === 'expired') {
+          if (updatedUser.status === 'active') {
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
           } else {

@@ -4,7 +4,7 @@ import { Search, Loader2, Trash2, Plane } from 'lucide-react';
 
 interface Props {
   userTokens: number;
-  onAnalyze: () => Promise<boolean> | boolean;
+  onAnalyze: () => void;
 }
 
 export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
@@ -13,9 +13,9 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [rounds, setRounds] = useState<AviatorRound[]>([]);
 
-  const handleAnalyze = async () => {
-    if (userTokens < 500) {
-      alert('Tokens expirés ou insuffisants. Veuillez recharger.');
+  const handleAnalyze = () => {
+    if (userTokens <= 0) {
+      alert('Tokens insuffisants');
       return;
     }
     if (!historyText.trim() || !startTime.trim()) {
@@ -23,11 +23,7 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
       return;
     }
 
-    const canAnalyze = await onAnalyze(); // Deduct token and check expiration
-    if (canAnalyze === false) {
-      return;
-    }
-
+    onAnalyze(); // Deduct token
     setIsAnalyzing(true);
 
     // Simulate 5s analysis

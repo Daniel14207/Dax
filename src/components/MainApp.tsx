@@ -44,21 +44,16 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     return () => unsubscribe();
   }, [initialUser.id]);
 
-  const handleAnalyze = async (): Promise<boolean> => {
-    if (user.tokens < 500 || (user.date_expiration && Date.now() > user.date_expiration)) {
-      alert("Tokens expirés ou insuffisants. Veuillez recharger.");
-      return false;
-    }
+  const handleAnalyze = async () => {
+    if (user.tokens <= 0) return;
     
     try {
       const userRef = doc(db, 'users', user.id);
       await updateDoc(userRef, {
-        tokens: increment(-500)
+        tokens: increment(-1)
       });
-      return true;
     } catch (err) {
       console.error('Failed to deduct token', err);
-      return false;
     }
   };
 
@@ -102,100 +97,68 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
   };
 
   const renderTimeSlots = () => {
-    if (!virtualTime || virtualTime.isPause) return null;
+    if (!virtualTime) return null;
     
-    const currentSlot = virtualTime.slots[virtualTime.currentSlotIndex];
-    if (!currentSlot) return null;
-
     return (
-      <div className="bg-[#1e293b] border-b border-slate-800 p-3 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Live Time</span>
-        </div>
-        <div className="bg-slate-900 px-3 py-1 rounded-lg border border-slate-700 font-mono text-amber-500 font-bold">
-          {currentSlot.time}
+      <div className="bg-[#1e293b] border-b border-slate-800 overflow-x-auto hide-scrollbar">
+        <div className="flex p-2 gap-2 min-w-max">
+          {virtualTime.slots.map((slot, i) => (
+            <div 
+              key={i}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex flex-col items-center min-w-[60px] ${
+                slot.isCurrent ? 'bg-[#eab308] text-slate-900 shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 
+                slot.isPast ? 'bg-slate-800 text-slate-500' : 'bg-slate-700 text-slate-300'
+              }`}
+            >
+              <span>{slot.time}</span>
+              {slot.isCurrent && <span className="text-[9px] uppercase font-bold mt-0.5 animate-pulse">Live</span>}
+            </div>
+          ))}
         </div>
       </div>
     );
   };
 
-  const generateOdds = (leagueId: string, homeTeam: string, awayTeam: string, seed: number) => {
-    // Deterministic PRNG
-    let t = seed + 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    const random = ((t ^ t >>> 14) >>> 0) / 4294967296;
-    
+  const generateOdds = (leagueId: string, homeTeam: string, awayTeam: string) => {
     const isAfricaCup = leagueId === 'afr';
     const specialTeams = ['Sudan', 'Benin', 'Equatorial Guinea'];
     
     let homeOdd = 0;
     let awayOdd = 0;
-    let drawOdd = Number((random * 2 + 2.5).toFixed(2)); // 2.50 - 4.50
+    let drawOdd = Number((Math.random() * 2 + 2.5).toFixed(2)); // 2.50 - 4.50
 
     // Special Africa Cup logic
     if (isAfricaCup && (specialTeams.includes(homeTeam) || specialTeams.includes(awayTeam))) {
-      // Second random number
-      t = seed + 1 + 0x6D2B79F5;
-      t = Math.imul(t ^ t >>> 15, t | 1);
-      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-      const random2 = ((t ^ t >>> 14) >>> 0) / 4294967296;
-      
-      const isRare = random2 > 0.8; // 20% chance for rare odds
+      const isRare = Math.random() > 0.8; // 20% chance for rare odds
       if (isRare) {
-        // Third random number
-        t = seed + 2 + 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        const random3 = ((t ^ t >>> 14) >>> 0) / 4294967296;
-        
-        const veryRare = random3 > 0.9; // 10% of rare are very rare (98, 100)
-        
-        // Fourth random number
-        t = seed + 3 + 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        const random4 = ((t ^ t >>> 14) >>> 0) / 4294967296;
-        
-        const highOdd = veryRare ? (random4 > 0.5 ? 98 : 100) : Number((random4 * 15 + 10).toFixed(2)); // 10.00 - 25.00
+        const veryRare = Math.random() > 0.9; // 10% of rare are very rare (98, 100)
+        const highOdd = veryRare ? (Math.random() > 0.5 ? 98 : 100) : Number((Math.random() * 15 + 10).toFixed(2)); // 10.00 - 25.00
         
         if (specialTeams.includes(homeTeam)) {
           homeOdd = highOdd;
-          awayOdd = Number((random4 * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
+          awayOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
         } else {
           awayOdd = highOdd;
-          homeOdd = Number((random4 * 1.3 + 1.2).toFixed(2));
+          homeOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2));
         }
         return { home: homeOdd, draw: drawOdd, away: awayOdd };
       }
     }
 
     // Normal realistic odds
-    // Use another random number for type
-    t = seed + 4 + 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    const type = ((t ^ t >>> 14) >>> 0) / 4294967296;
-    
-    // Use another random number for values
-    t = seed + 5 + 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    const valRandom = ((t ^ t >>> 14) >>> 0) / 4294967296;
-
+    const type = Math.random();
     if (type > 0.6) {
       // Home favorite
-      homeOdd = Number((valRandom * 0.8 + 1.2).toFixed(2)); // 1.20 - 2.00
-      awayOdd = Number((valRandom * 11 + 4).toFixed(2)); // 4.00 - 15.00
+      homeOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
+      awayOdd = Number((Math.random() * 15 + 5).toFixed(2)); // 5.00 - 20.00
     } else if (type > 0.2) {
       // Away favorite
-      awayOdd = Number((valRandom * 0.8 + 1.2).toFixed(2)); // 1.20 - 2.00
-      homeOdd = Number((valRandom * 11 + 4).toFixed(2)); // 4.00 - 15.00
+      awayOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2));
+      homeOdd = Number((Math.random() * 15 + 5).toFixed(2));
     } else {
       // Balanced
-      homeOdd = Number((valRandom * 1.5 + 2.0).toFixed(2)); // 2.00 - 3.50
-      awayOdd = Number((valRandom * 1.5 + 2.0).toFixed(2)); // 2.00 - 3.50
+      homeOdd = Number((Math.random() * 2.5 + 2.5).toFixed(2)); // 2.50 - 5.00
+      awayOdd = Number((Math.random() * 2.5 + 2.5).toFixed(2));
     }
 
     return { home: homeOdd, draw: drawOdd, away: awayOdd };
@@ -203,252 +166,114 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
 
   const renderLeagues = () => {
     if (!virtualTime) return null;
-
-    if (virtualTime.isPause) {
-      const minutes = Math.floor(virtualTime.pauseRemainingMs / 60000);
-      const seconds = Math.floor((virtualTime.pauseRemainingMs % 60000) / 1000);
-      const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-      return (
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 max-w-sm w-full shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-orange-500"></div>
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <Clock className="w-16 h-16 text-amber-500 animate-pulse" />
-                <div className="absolute -bottom-2 -right-2 bg-slate-800 rounded-full p-1.5 border border-slate-700">
-                  <span className="text-xl">☕</span>
-                </div>
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Pause Analyse...</h2>
-            <p className="text-slate-400 mb-6 text-sm">L'algorithme analyse les prochains cycles.</p>
-            <div className="bg-slate-900/80 rounded-xl p-4 border border-slate-700/50">
-              <div className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Reprise dans</div>
-              <div className="text-4xl font-black text-amber-500 font-mono tracking-widest">{timeString}</div>
-            </div>
-          </div>
-        </div>
-      );
-    }
     
-    const visibleSlots = virtualTime.slots.slice(0, virtualTime.currentSlotIndex + 1).reverse();
-
     return (
-      <div className="space-y-6">
-        {visibleSlots.map(slot => (
-          <div key={slot.time} className="space-y-4">
-            <h3 className="text-white font-bold text-lg px-2 border-l-4 border-amber-500">
-              {slot.isPast ? 'Résultats Historiques' : 'Matchs en Direct'} - {slot.time}
-            </h3>
-            {LEAGUES.map(league => {
-              const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
-              if (teamNames.length === 0) return null;
+      <div className="space-y-4">
+        {LEAGUES.map(league => (
+          <div key={league.id} className="bg-[#1e293b] rounded-xl overflow-hidden border border-slate-800 shadow-lg">
+            <div className="bg-slate-800/80 px-3 py-2 flex items-center gap-2 border-b border-slate-700/50">
+              <img src={league.logo} alt={league.name} className="w-5 h-5 object-contain" />
+              <h3 className="font-bold text-white text-sm">{league.name}</h3>
+            </div>
+            
+            <div className="divide-y divide-slate-800/50 max-h-[600px] overflow-y-auto">
+              {virtualTime.slots.map((slot, slotIndex) => {
+                const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
+                if (teamNames.length === 0) return null;
 
-              const cycleSeed = virtualTime.cycleIndex;
-              const offset = slot.cycleOffset;
-              const homeIdx = Math.abs(offset * 3 + cycleSeed + 10) % teamNames.length;
-              const awayIdx = Math.abs(offset * 5 + cycleSeed + 1) % teamNames.length;
-              const finalAwayIdx = homeIdx === awayIdx ? Math.abs(offset * 7 + cycleSeed + 2) % teamNames.length : awayIdx;
-              
-              const homeTeam = teamNames[homeIdx];
-              const awayTeam = teamNames[finalAwayIdx];
-              
-              const matchSeed = cycleSeed * 100000 + offset * 1000 + league.id.charCodeAt(0) * 100 + homeTeam.charCodeAt(0) * 10 + awayTeam.charCodeAt(awayTeam.length - 1);
-              const odds = generateOdds(league.id, homeTeam, awayTeam, matchSeed);
-              
-              const scoreSeed = Math.abs(cycleSeed * 10000 + offset * 100 + homeTeam.charCodeAt(0) * awayTeam.charCodeAt(awayTeam.length - 1));
-              const confidence = 65 + (scoreSeed % 30); // 65% to 94%
-              
-              // Generate deterministic predictions
-              const getPrediction = () => {
-                 const p = scoreSeed % 100;
-                 if (p < 45) return { pick: '1', odd: odds.home };
-                 if (p < 75) return { pick: '2', odd: odds.away };
-                 return { pick: 'X', odd: odds.draw };
-              };
-              const prediction = getPrediction();
-
-              const getDC = () => {
-                 const odd1X = (1 / (1/odds.home + 1/odds.draw)).toFixed(2);
-                 const oddX2 = (1 / (1/odds.away + 1/odds.draw)).toFixed(2);
-                 const odd12 = (1 / (1/odds.home + 1/odds.away)).toFixed(2);
-                 if (prediction.pick === '1') return { pick: '1X', odd: odd1X };
-                 if (prediction.pick === '2') return { pick: 'X2', odd: oddX2 };
-                 return scoreSeed % 2 === 0 ? { pick: '1X', odd: odd1X } : { pick: 'X2', odd: oddX2 };
-              };
-              const dc = getDC();
-
-              const getExactScore = () => {
-                if (prediction.pick === '1') return scoreSeed % 2 === 0 ? '2-1' : '1-0';
-                if (prediction.pick === '2') return scoreSeed % 2 === 0 ? '1-2' : '0-1';
-                return scoreSeed % 2 === 0 ? '1-1' : '0-0';
-              };
-              const exactScore = getExactScore();
-              
-              const totalGoals = exactScore.split('-').reduce((a, b) => a + parseInt(b), 0);
-              const getGGNG = () => {
-                const [h, a] = exactScore.split('-').map(Number);
-                return (h > 0 && a > 0) ? 'GG' : 'NG';
-              };
-
-              const ht1x2 = prediction.pick === '1' ? (scoreSeed % 3 === 0 ? 'X' : '1') : prediction.pick === '2' ? (scoreSeed % 3 === 0 ? 'X' : '2') : 'X';
-              const htDC = ht1x2 === '1' ? '1X' : ht1x2 === '2' ? 'X2' : (scoreSeed % 2 === 0 ? '1X' : '12');
-              const htft = `${ht1x2}/${prediction.pick}`;
-              const firstGoal = totalGoals === 0 ? 'None' : `${(scoreSeed % 45) + 5}'`;
-
-              const renderDetailedResults = () => (
-                <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/30 mt-3 space-y-2 text-sm w-full">
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span className="text-slate-400">1X2</span>
-                    <span className="font-bold text-white">{prediction.pick} <span className="text-amber-500 text-xs">@{prediction.odd.toFixed(2)}</span></span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span className="text-slate-400">Double Chance</span>
-                    <span className="font-bold text-white">{dc.pick} <span className="text-amber-500 text-xs">@{dc.odd}</span></span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span className="text-slate-400">Mi-temps 1X2</span>
-                    <span className="font-bold text-white">{ht1x2}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span className="text-slate-400">Mi-temps Double Chance</span>
-                    <span className="font-bold text-white">{htDC}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span className="text-slate-400">Score Exact</span>
-                    <span className="font-bold text-white">{exactScore}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span className="text-slate-400">Total Goals</span>
-                    <span className="font-bold text-white">{totalGoals}</span>
-                  </div>
-                  <div className="border-b border-slate-800 pb-2 pt-1">
-                    <span className="text-slate-400 block mb-2">Over/Under</span>
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="bg-slate-800 rounded py-1 border border-slate-700"><span className="text-[10px] text-slate-400 block">+0.5</span><span className={totalGoals > 0.5 ? 'text-[#2dd4bf] font-bold' : 'text-red-500 font-bold'}>{totalGoals > 0.5 ? '✔' : '✖'}</span></div>
-                      <div className="bg-slate-800 rounded py-1 border border-slate-700"><span className="text-[10px] text-slate-400 block">+1.5</span><span className={totalGoals > 1.5 ? 'text-[#2dd4bf] font-bold' : 'text-red-500 font-bold'}>{totalGoals > 1.5 ? '✔' : '✖'}</span></div>
-                      <div className="bg-slate-800 rounded py-1 border border-slate-700"><span className="text-[10px] text-slate-400 block">+2.5</span><span className={totalGoals > 2.5 ? 'text-[#2dd4bf] font-bold' : 'text-red-500 font-bold'}>{totalGoals > 2.5 ? '✔' : '✖'}</span></div>
-                      <div className="bg-slate-800 rounded py-1 border border-slate-700"><span className="text-[10px] text-slate-400 block">+3.5</span><span className={totalGoals > 3.5 ? 'text-[#2dd4bf] font-bold' : 'text-red-500 font-bold'}>{totalGoals > 3.5 ? '✔' : '✖'}</span></div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1 pt-1">
-                    <span className="text-slate-400">GG/NG</span>
-                    <span className="font-bold text-white">{getGGNG()}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span className="text-slate-400">HT/FT</span>
-                    <span className="font-bold text-white">{htft}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">First goal</span>
-                    <span className="font-bold text-white">{firstGoal}</span>
-                  </div>
-                </div>
-              );
-
-              if (slot.isPast) {
+                // Use cycleIndex to ensure teams shuffle each cycle
+                const cycleSeed = virtualTime.cycleIndex;
+                const offset = slot.cycleOffset;
+                const homeIdx = Math.abs(offset * 3 + cycleSeed + 10) % teamNames.length;
+                const awayIdx = Math.abs(offset * 5 + cycleSeed + 1) % teamNames.length;
+                const finalAwayIdx = homeIdx === awayIdx ? Math.abs(offset * 7 + cycleSeed + 2) % teamNames.length : awayIdx;
+                
+                const homeTeam = teamNames[homeIdx];
+                const awayTeam = teamNames[finalAwayIdx];
+                
+                const isResult = slot.isPast;
+                const isLive = slot.isCurrent;
+                const isFuture = slot.isFuture;
+                const odds = generateOdds(league.id, homeTeam, awayTeam);
+                
+                // Deterministic score based on slot and teams
+                const scoreSeed = Math.abs(offset * homeTeam.length * awayTeam.length + cycleSeed);
+                const homeScore = scoreSeed % 4;
+                const awayScore = (scoreSeed / 2) % 4 | 0;
+                
+                const confidence = 65 + (scoreSeed % 30); // 65% to 94%
+                const isHotMatch = scoreSeed % 5 === 0; // 20% chance
+                
                 return (
-                  <div key={`${league.id}-${slot.time}`} className="bg-[#1e293b] rounded-xl overflow-hidden border border-slate-800 shadow-lg p-4 relative">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-[#2dd4bf]"></div>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">⚽</span>
-                        <span className="font-bold text-white text-sm">{homeTeam} vs {awayTeam}</span>
+                  <div 
+                    key={slotIndex} 
+                    className={`p-2 hover:bg-slate-800/30 transition-colors cursor-pointer relative overflow-hidden ${isHotMatch ? 'border-l-2 border-[#eab308]' : ''}`}
+                    onClick={() => setSelectedMatch({
+                      league, homeTeam, awayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed
+                    })}
+                  >
+                    {isHotMatch && (
+                      <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-lg flex items-center gap-1">
+                        <Flame className="w-2.5 h-2.5" /> HOT
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-xs text-slate-400">{slot.time}</span>
+                    )}
+                    <div className="flex justify-between items-center mb-1.5">
+                      <div className="flex items-center gap-1 text-[10px] font-medium bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">
+                        <Clock className="w-2.5 h-2.5 text-[#eab308]" />
+                        <span>{slot.time}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {isFuture && (
+                          <span className="text-[9px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                            Confiance: <span className={confidence > 85 ? 'text-[#2dd4bf]' : 'text-[#eab308]'}>{confidence}%</span>
+                          </span>
+                        )}
+                        {isResult && <span className="text-[9px] font-bold text-red-400 uppercase bg-red-500/10 px-1.5 py-0.5 rounded">Résultat</span>}
+                        {isLive && <span className="text-[9px] font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-1.5 py-0.5 rounded animate-pulse">Live</span>}
+                        {isFuture && <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-800 px-1.5 py-0.5 rounded">Prédiction</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xl">🏆</span>
-                      <span className="text-sm text-slate-300">{league.name}</span>
+                    
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <img src={getTeamLogo(homeTeam, league.id)} alt={homeTeam} className="w-5 h-5 object-contain" />
+                        <span className="font-bold text-white text-[11px] text-center leading-tight truncate w-full px-1">{homeTeam}</span>
+                      </div>
+                      
+                      <div className="px-2 flex flex-col items-center justify-center">
+                        {isResult ? (
+                          <div className="text-sm font-black text-white tracking-widest bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                            {homeScore} - {awayScore}
+                          </div>
+                        ) : (
+                          <div className="text-slate-500 font-bold text-[10px] bg-slate-800 px-1.5 py-0.5 rounded-full">VS</div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <img src={getTeamLogo(awayTeam, league.id)} alt={awayTeam} className="w-5 h-5 object-contain" />
+                        <span className="font-bold text-white text-[11px] text-center leading-tight truncate w-full px-1">{awayTeam}</span>
+                      </div>
                     </div>
-                    {renderDetailedResults()}
+                    
+                    <div className="mt-1.5 grid grid-cols-3 gap-1">
+                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-[9px] text-slate-400 mb-0.5">1</span>
+                        <span className="font-bold text-[#eab308] text-xs">{odds.home.toFixed(2)}</span>
+                      </div>
+                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-[9px] text-slate-400 mb-0.5">X</span>
+                        <span className="font-bold text-[#eab308] text-xs">{odds.draw.toFixed(2)}</span>
+                      </div>
+                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
+                        <span className="text-[9px] text-slate-400 mb-0.5">2</span>
+                        <span className="font-bold text-[#eab308] text-xs">{odds.away.toFixed(2)}</span>
+                      </div>
+                    </div>
                   </div>
                 );
-              }
-
-              return (
-                <div key={`${league.id}-${slot.time}`} className="bg-[#1e293b] rounded-xl overflow-hidden border border-slate-800 shadow-lg relative">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
-                  
-                  {/* Header */}
-                  <div className="bg-slate-800/50 px-4 py-2.5 flex justify-between items-center border-b border-slate-700/50">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-amber-500" />
-                      <span className="text-xs font-bold text-white">{slot.time} <span className="text-[10px] text-slate-500 font-normal">(+{slot.cycleOffset * 2}min auto)</span></span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-1 rounded-md border border-slate-700/50">
-                      <img src={league.logo} alt={league.name} className="w-3.5 h-3.5 object-contain" />
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{league.name}</span>
-                    </div>
-                  </div>
-
-                  {/* Match Teams */}
-                  <div className="px-4 py-3 flex items-center justify-center gap-3">
-                    <span className="font-bold text-white text-sm text-right flex-1">{homeTeam}</span>
-                    <span className="text-[10px] font-black text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">VS</span>
-                    <span className="font-bold text-white text-sm text-left flex-1">{awayTeam}</span>
-                  </div>
-
-                  {/* Odds */}
-                  <div className="px-4 pb-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Activity className="w-3 h-3 text-slate-400" />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cotes</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-700/50">
-                        <span className="text-[10px] text-slate-500 font-bold">1</span>
-                        <span className="text-xs font-bold text-white">{odds.home.toFixed(2)}</span>
-                      </div>
-                      <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-700/50">
-                        <span className="text-[10px] text-slate-500 font-bold">X</span>
-                        <span className="text-xs font-bold text-white">{odds.draw.toFixed(2)}</span>
-                      </div>
-                      <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-700/50">
-                        <span className="text-[10px] text-slate-500 font-bold">2</span>
-                        <span className="text-xs font-bold text-white">{odds.away.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Prediction & Details */}
-                  <div className="bg-slate-800/30 p-4 border-t border-slate-700/50">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <CheckCircle className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pronostic</span>
-                        </div>
-                        <div className="text-lg font-black text-white bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20 inline-block">
-                          {prediction.pick} <span className="text-xs text-amber-500 ml-1">@{prediction.odd.toFixed(2)}</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-1.5 justify-end mb-1">
-                          <Flame className="w-3.5 h-3.5 text-orange-500" />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Confiance</span>
-                        </div>
-                        <div className={`text-lg font-black ${confidence >= 85 ? 'text-[#2dd4bf]' : 'text-amber-500'}`}>
-                          {confidence}%
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-2 mt-2">
-                        <Menu className="w-3 h-3 text-slate-400" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Détails Complets</span>
-                      </div>
-                      {renderDetailedResults()}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
         ))}
       </div>
@@ -460,14 +285,13 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       { id: 'tips', label: 'TIPS', icon: Flame },
       { id: 'multiple', label: 'MULTIPLE', icon: CheckCircle },
       { id: 'best_live', label: 'BEST LIVE', icon: PlayCircle },
-      { id: 'manual', label: 'ANALYSE MANUELLE', icon: Search },
       { id: 'vip', label: 'VIP', icon: Gem },
-      { id: 'result', label: 'RÉSULTATS', icon: Trophy },
+      { id: 'result', label: 'RESULT', icon: Trophy },
       { id: 'status', label: 'STATUS', icon: Activity },
     ];
 
     return (
-      <div className="bg-black border-b border-slate-800 overflow-x-auto hide-scrollbar sticky top-[60px] z-10">
+      <div className="bg-[#1e293b] border-b border-slate-800 overflow-x-auto hide-scrollbar sticky top-[60px] z-10">
         <div className="flex p-2 gap-2 min-w-max">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -503,7 +327,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     ];
 
     return (
-      <div className="bg-black border-b border-slate-800 overflow-x-auto hide-scrollbar sticky top-[60px] z-10">
+      <div className="bg-[#1e293b] border-b border-slate-800 overflow-x-auto hide-scrollbar sticky top-[60px] z-10">
         <div className="flex p-2 gap-2 min-w-max">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -527,49 +351,10 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     );
   };
 
-  const getRemainingTime = () => {
-    if (!user.date_expiration) return null;
-    const diff = user.date_expiration - Date.now();
-    if (diff <= 0) return 'Expiré';
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((diff / 1000 / 60) % 60);
-    
-    if (days > 0) return `${days}j ${hours}h ${minutes}min`;
-    if (hours > 0) return `${hours}h ${minutes}min`;
-    return `${minutes}min`;
-  };
-
-  // Continuous expiration check
-  useEffect(() => {
-    const checkExpiration = () => {
-      if (user.date_expiration && Date.now() > user.date_expiration) {
-        if (user.tokens > 0 || (user.status !== 'expired' && user.status !== 'inactive')) {
-          try {
-            const userRef = doc(db, 'users', user.id);
-            const updates: any = { tokens: 0 };
-            if (user.status !== 'inactive') {
-              updates.status = 'expired';
-            }
-            updateDoc(userRef, updates);
-          } catch (err) {
-            console.error('Failed to expire tokens', err);
-          }
-        }
-      }
-    };
-
-    const interval = setInterval(checkExpiration, 60000); // Check every minute
-    checkExpiration(); // Check immediately on mount
-
-    return () => clearInterval(interval);
-  }, [user.date_expiration, user.tokens, user.status, user.id]);
-
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[#0f172a] text-slate-300 flex flex-col font-sans">
       {/* Header */}
-      <header className="bg-black flex items-center justify-between p-3 sticky top-0 z-20 shadow-md h-[60px]">
+      <header className="bg-[#1e293b] flex items-center justify-between p-3 sticky top-0 z-20 shadow-md h-[60px]">
         <div className="flex items-center gap-3">
           <button onClick={() => setShowMenu(true)} className="p-1.5 bg-[#eab308] text-slate-900 rounded-lg">
             <Menu className="w-5 h-5" />
@@ -577,16 +362,9 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
           <h1 className="text-lg font-bold text-white">Betting Tips</h1>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
-              <Coins className="w-3.5 h-3.5 text-[#eab308]" />
-              <span className="font-bold text-white text-sm">{user.tokens}</span>
-            </div>
-            {user.date_expiration && (
-              <div className={`text-[9px] font-bold mt-0.5 ${Date.now() > user.date_expiration ? 'text-red-400' : 'text-[#2dd4bf]'}`}>
-                {getRemainingTime()}
-              </div>
-            )}
+          <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
+            <Coins className="w-3.5 h-3.5 text-[#eab308]" />
+            <span className="font-bold text-white text-sm">{user.tokens}</span>
           </div>
           <button onClick={() => setShowCart(true)} className="relative p-1.5 hover:bg-slate-800 rounded-full transition-colors">
             <ShoppingCart className="w-5 h-5 text-[#eab308]" />
@@ -752,12 +530,6 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               </div>
             )}
 
-            {virtuelTab === 'manual' && (
-              <div className="p-4">
-                <VirtualAnalysis userTokens={user.tokens} onAnalyze={handleAnalyze} />
-              </div>
-            )}
-
             {virtuelTab === 'vip' && (
               <div className="p-4 text-center">
                 <Gem className="w-12 h-12 text-[#eab308] mx-auto mb-4" />
@@ -768,24 +540,10 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             )}
 
             {virtuelTab === 'result' && (
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-slate-800 p-2 rounded-lg">
-                    <History className="w-6 h-6 text-[#eab308]" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">Historique des Résultats</h2>
-                    <p className="text-sm text-slate-400">Consultez les résultats des matchs précédents.</p>
-                  </div>
-                </div>
-                
-                <div className="bg-[#1e293b] rounded-xl border border-slate-800 overflow-hidden">
-                  <div className="p-8 text-center">
-                    <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-300 mb-2">Aucun résultat récent</h3>
-                    <p className="text-slate-500 text-sm">Les résultats des matchs terminés apparaîtront ici.</p>
-                  </div>
-                </div>
+              <div className="p-4 text-center">
+                <Trophy className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <h2 className="text-xl font-bold text-white mb-2">Résultats</h2>
+                <p className="text-slate-400">Consultez les résultats des matchs précédents et l'historique de nos pronostics.</p>
               </div>
             )}
 
@@ -854,7 +612,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="bg-black border-t border-slate-800 fixed bottom-0 w-full flex justify-around px-2 py-2 pb-safe z-20">
+      <nav className="bg-[#1e293b] border-t border-slate-800 fixed bottom-0 w-full flex justify-around px-2 py-2 pb-safe z-20">
         <button onClick={() => setMainTab('virtuel')} className={`flex flex-col items-center p-2 min-w-[60px] ${mainTab === 'virtuel' ? 'text-[#eab308]' : 'text-slate-500'}`}>
           <Flame className="w-5 h-5 mb-1" />
           <span className="text-[10px] font-bold uppercase tracking-wider">Virtuel</span>
