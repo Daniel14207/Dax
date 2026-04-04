@@ -83,14 +83,14 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     
     return (
-      <div className="bg-[#1e293b] p-3 text-center border-b border-slate-800 flex justify-between items-center">
+      <div className="bg-white p-3 text-center border-b border-slate-200 flex justify-between items-center">
         <div className="text-left">
-          <h2 className="text-lg font-bold text-white capitalize">{monthYear}</h2>
+          <h2 className="text-lg font-bold text-slate-900 capitalize">{monthYear}</h2>
           <p className="text-[#2dd4bf] font-medium text-xs capitalize">{dayDate}</p>
         </div>
         <div className="text-right">
           <div className="text-xl font-bold text-[#eab308]">{time}</div>
-          <div className="text-[10px] text-slate-400 uppercase">Heure locale</div>
+          <div className="text-[10px] text-slate-500 uppercase">Heure locale</div>
         </div>
       </div>
     );
@@ -100,14 +100,14 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     if (!virtualTime) return null;
     
     return (
-      <div className="bg-[#1e293b] border-b border-slate-800 overflow-x-auto hide-scrollbar">
+      <div className="bg-white border-b border-slate-200 overflow-x-auto hide-scrollbar">
         <div className="flex p-2 gap-2 min-w-max">
           {virtualTime.slots.map((slot, i) => (
             <div 
               key={i}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium flex flex-col items-center min-w-[60px] ${
                 slot.isCurrent ? 'bg-[#eab308] text-slate-900 shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 
-                slot.isPast ? 'bg-slate-800 text-slate-500' : 'bg-slate-700 text-slate-300'
+                slot.isPast ? 'bg-slate-100 text-slate-500' : 'bg-slate-50 text-slate-600'
               }`}
             >
               <span>{slot.time}</span>
@@ -170,13 +170,13 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     return (
       <div className="space-y-4">
         {LEAGUES.map(league => (
-          <div key={league.id} className="bg-[#1e293b] rounded-xl overflow-hidden border border-slate-800 shadow-lg">
-            <div className="bg-slate-800/80 px-3 py-2 flex items-center gap-2 border-b border-slate-700/50">
+          <div key={league.id} className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+            <div className="bg-slate-50 px-3 py-2 flex items-center gap-2 border-b border-slate-200">
               <img src={league.logo} alt={league.name} className="w-5 h-5 object-contain" />
-              <h3 className="font-bold text-white text-sm">{league.name}</h3>
+              <h3 className="font-bold text-slate-900 text-sm">{league.name}</h3>
             </div>
             
-            <div className="divide-y divide-slate-800/50 max-h-[600px] overflow-y-auto">
+            <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
               {virtualTime.slots.map((slot, slotIndex) => {
                 const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
                 if (teamNames.length === 0) return null;
@@ -207,66 +207,66 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 return (
                   <div 
                     key={slotIndex} 
-                    className={`p-2 hover:bg-slate-800/30 transition-colors cursor-pointer relative overflow-hidden ${isHotMatch ? 'border-l-2 border-[#eab308]' : ''}`}
+                    className={`p-2 hover:bg-slate-50 transition-colors cursor-pointer relative overflow-hidden ${isHotMatch ? 'border-l-2 border-[#eab308]' : ''}`}
                     onClick={() => setSelectedMatch({
                       league, homeTeam, awayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed
                     })}
                   >
                     {isHotMatch && (
-                      <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-lg flex items-center gap-1">
+                      <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-sm flex items-center gap-1">
                         <Flame className="w-2.5 h-2.5" /> HOT
                       </div>
                     )}
                     <div className="flex justify-between items-center mb-1.5">
-                      <div className="flex items-center gap-1 text-[10px] font-medium bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">
+                      <div className="flex items-center gap-1 text-[10px] font-medium bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
                         <Clock className="w-2.5 h-2.5 text-[#eab308]" />
                         <span>{slot.time}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         {isFuture && (
-                          <span className="text-[9px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                          <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                             Confiance: <span className={confidence > 85 ? 'text-[#2dd4bf]' : 'text-[#eab308]'}>{confidence}%</span>
                           </span>
                         )}
-                        {isResult && <span className="text-[9px] font-bold text-red-400 uppercase bg-red-500/10 px-1.5 py-0.5 rounded">Résultat</span>}
+                        {isResult && <span className="text-[9px] font-bold text-red-500 uppercase bg-red-50 px-1.5 py-0.5 rounded">Résultat</span>}
                         {isLive && <span className="text-[9px] font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-1.5 py-0.5 rounded animate-pulse">Live</span>}
-                        {isFuture && <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-800 px-1.5 py-0.5 rounded">Prédiction</span>}
+                        {isFuture && <span className="text-[9px] font-bold text-slate-500 uppercase bg-slate-100 px-1.5 py-0.5 rounded">Prédiction</span>}
                       </div>
                     </div>
                     
                     <div className="flex justify-between items-center">
                       <div className="flex-1 flex flex-col items-center gap-1">
                         <img src={getTeamLogo(homeTeam, league.id)} alt={homeTeam} className="w-5 h-5 object-contain" />
-                        <span className="font-bold text-white text-[11px] text-center leading-tight truncate w-full px-1">{homeTeam}</span>
+                        <span className="font-bold text-slate-900 text-[11px] text-center leading-tight truncate w-full px-1">{homeTeam}</span>
                       </div>
                       
                       <div className="px-2 flex flex-col items-center justify-center">
                         {isResult ? (
-                          <div className="text-sm font-black text-white tracking-widest bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                          <div className="text-sm font-black text-slate-900 tracking-widest bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                             {homeScore} - {awayScore}
                           </div>
                         ) : (
-                          <div className="text-slate-500 font-bold text-[10px] bg-slate-800 px-1.5 py-0.5 rounded-full">VS</div>
+                          <div className="text-slate-400 font-bold text-[10px] bg-slate-100 px-1.5 py-0.5 rounded-full">VS</div>
                         )}
                       </div>
                       
                       <div className="flex-1 flex flex-col items-center gap-1">
                         <img src={getTeamLogo(awayTeam, league.id)} alt={awayTeam} className="w-5 h-5 object-contain" />
-                        <span className="font-bold text-white text-[11px] text-center leading-tight truncate w-full px-1">{awayTeam}</span>
+                        <span className="font-bold text-slate-900 text-[11px] text-center leading-tight truncate w-full px-1">{awayTeam}</span>
                       </div>
                     </div>
                     
                     <div className="mt-1.5 grid grid-cols-3 gap-1">
-                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
-                        <span className="text-[9px] text-slate-400 mb-0.5">1</span>
+                      <div className="bg-slate-50 rounded p-1 flex flex-col items-center border border-slate-200 hover:border-[#eab308] transition-colors">
+                        <span className="text-[9px] text-slate-500 mb-0.5">1</span>
                         <span className="font-bold text-[#eab308] text-xs">{odds.home.toFixed(2)}</span>
                       </div>
-                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
-                        <span className="text-[9px] text-slate-400 mb-0.5">X</span>
+                      <div className="bg-slate-50 rounded p-1 flex flex-col items-center border border-slate-200 hover:border-[#eab308] transition-colors">
+                        <span className="text-[9px] text-slate-500 mb-0.5">X</span>
                         <span className="font-bold text-[#eab308] text-xs">{odds.draw.toFixed(2)}</span>
                       </div>
-                      <div className="bg-slate-800/50 rounded p-1 flex flex-col items-center border border-slate-700/50 hover:border-[#eab308] transition-colors">
-                        <span className="text-[9px] text-slate-400 mb-0.5">2</span>
+                      <div className="bg-slate-50 rounded p-1 flex flex-col items-center border border-slate-200 hover:border-[#eab308] transition-colors">
+                        <span className="text-[9px] text-slate-500 mb-0.5">2</span>
                         <span className="font-bold text-[#eab308] text-xs">{odds.away.toFixed(2)}</span>
                       </div>
                     </div>
@@ -291,7 +291,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     ];
 
     return (
-      <div className="bg-[#1e293b] border-b border-slate-800 overflow-x-auto hide-scrollbar sticky top-[60px] z-10">
+      <div className="bg-white border-b border-slate-200 overflow-x-auto hide-scrollbar sticky top-[60px] z-10">
         <div className="flex p-2 gap-2 min-w-max">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -302,7 +302,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase transition-colors ${
                   virtuelTab === tab.id 
                     ? 'bg-[#eab308] text-slate-900' 
-                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -327,7 +327,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     ];
 
     return (
-      <div className="bg-[#1e293b] border-b border-slate-800 overflow-x-auto hide-scrollbar sticky top-[60px] z-10">
+      <div className="bg-white border-b border-slate-200 overflow-x-auto hide-scrollbar sticky top-[60px] z-10">
         <div className="flex p-2 gap-2 min-w-max">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -338,7 +338,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase transition-colors ${
                   aviatorTab === tab.id 
                     ? 'bg-red-500 text-white' 
-                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -352,9 +352,9 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-300 flex flex-col font-sans">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans">
       {/* Header */}
-      <header className="bg-[#1e293b] flex items-center justify-between p-3 sticky top-0 z-20 shadow-md h-[60px]">
+      <header className="bg-black flex items-center justify-between p-3 sticky top-0 z-20 shadow-md h-[60px]">
         <div className="flex items-center gap-3">
           <button onClick={() => setShowMenu(true)} className="p-1.5 bg-[#eab308] text-slate-900 rounded-lg">
             <Menu className="w-5 h-5" />
@@ -522,8 +522,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             {virtuelTab === 'best_live' && (
               <div className="p-4 text-center">
                 <Activity className="w-12 h-12 text-[#2dd4bf] mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Best Live</h2>
-                <p className="text-slate-400">Analyse en temps réel des meilleurs matchs en cours pour des paris en direct.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Best Live</h2>
+                <p className="text-slate-600">Analyse en temps réel des meilleurs matchs en cours pour des paris en direct.</p>
                 <div className="mt-6">
                   <VirtualAnalysis userTokens={user.tokens} onAnalyze={handleAnalyze} />
                 </div>
@@ -533,8 +533,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             {virtuelTab === 'vip' && (
               <div className="p-4 text-center">
                 <Gem className="w-12 h-12 text-[#eab308] mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Espace VIP</h2>
-                <p className="text-slate-400">Accédez aux pronostics exclusifs avec un taux de réussite supérieur à 90%.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Espace VIP</h2>
+                <p className="text-slate-600">Accédez aux pronostics exclusifs avec un taux de réussite supérieur à 90%.</p>
                 <button className="mt-6 bg-[#eab308] text-slate-900 font-bold px-6 py-3 rounded-lg shadow-lg">Devenir VIP</button>
               </div>
             )}
@@ -542,16 +542,16 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             {virtuelTab === 'result' && (
               <div className="p-4 text-center">
                 <Trophy className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Résultats</h2>
-                <p className="text-slate-400">Consultez les résultats des matchs précédents et l'historique de nos pronostics.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Résultats</h2>
+                <p className="text-slate-600">Consultez les résultats des matchs précédents et l'historique de nos pronostics.</p>
               </div>
             )}
 
             {virtuelTab === 'status' && (
               <div className="p-4 text-center">
                 <Activity className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Status du Système</h2>
-                <p className="text-slate-400">L'algorithme est actuellement en ligne et fonctionne de manière optimale.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Status du Système</h2>
+                <p className="text-slate-600">L'algorithme est actuellement en ligne et fonctionne de manière optimale.</p>
               </div>
             )}
           </>
@@ -567,43 +567,43 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             {aviatorTab === 'analyse' && (
               <div className="p-4 text-center">
                 <Search className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Analyse Poussée</h2>
-                <p className="text-slate-400">Outil d'analyse statistique pour détecter les tendances de l'algorithme Aviator.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Analyse Poussée</h2>
+                <p className="text-slate-600">Outil d'analyse statistique pour détecter les tendances de l'algorithme Aviator.</p>
               </div>
             )}
             {aviatorTab === 'history' && (
               <div className="p-4 text-center">
                 <History className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Historique</h2>
-                <p className="text-slate-400">Consultez l'historique complet des multiplicateurs précédents.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Historique</h2>
+                <p className="text-slate-600">Consultez l'historique complet des multiplicateurs précédents.</p>
               </div>
             )}
             {aviatorTab === 'high_risk' && (
               <div className="p-4 text-center">
                 <AlertTriangle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">High Risk (Cotes 10x+)</h2>
-                <p className="text-slate-400">Prédictions des moments propices pour viser les gros multiplicateurs.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">High Risk (Cotes 10x+)</h2>
+                <p className="text-slate-600">Prédictions des moments propices pour viser les gros multiplicateurs.</p>
               </div>
             )}
             {aviatorTab === 'safe_zone' && (
               <div className="p-4 text-center">
                 <ShieldCheck className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Safe Zone (1.5x - 2.0x)</h2>
-                <p className="text-slate-400">Stratégie sécurisée pour des gains réguliers avec un risque minimal.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Safe Zone (1.5x - 2.0x)</h2>
+                <p className="text-slate-600">Stratégie sécurisée pour des gains réguliers avec un risque minimal.</p>
               </div>
             )}
             {aviatorTab === 'vip' && (
               <div className="p-4 text-center">
                 <Gem className="w-12 h-12 text-purple-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Aviator VIP</h2>
-                <p className="text-slate-400">Signaux en temps réel via Telegram pour nos membres VIP.</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Aviator VIP</h2>
+                <p className="text-slate-600">Signaux en temps réel via Telegram pour nos membres VIP.</p>
               </div>
             )}
             {aviatorTab === 'admin' && (
               <div className="p-4 text-center">
                 <Settings className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Administration</h2>
-                <p className="text-slate-400">Configuration de l'algorithme de prédiction (Accès restreint).</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Administration</h2>
+                <p className="text-slate-600">Configuration de l'algorithme de prédiction (Accès restreint).</p>
                 <button onClick={() => setShowAdminModal(true)} className="mt-4 bg-slate-700 text-white px-4 py-2 rounded-lg">Connexion Admin</button>
               </div>
             )}
@@ -612,7 +612,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="bg-[#1e293b] border-t border-slate-800 fixed bottom-0 w-full flex justify-around px-2 py-2 pb-safe z-20">
+      <nav className="bg-black border-t border-slate-800 fixed bottom-0 w-full flex justify-around px-2 py-2 pb-safe z-20">
         <button onClick={() => setMainTab('virtuel')} className={`flex flex-col items-center p-2 min-w-[60px] ${mainTab === 'virtuel' ? 'text-[#eab308]' : 'text-slate-500'}`}>
           <Flame className="w-5 h-5 mb-1" />
           <span className="text-[10px] font-bold uppercase tracking-wider">Virtuel</span>
