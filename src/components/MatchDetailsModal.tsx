@@ -152,8 +152,8 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
               <Clock className="w-3.5 h-3.5 text-[#eab308]" />
               <span>{slot.time}</span>
             </div>
-            {isResult && <span className="text-[11px] font-bold text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded-full border border-red-500/20">Résultat Final</span>}
-            {isLive && <span className="text-[11px] font-bold text-red-500 uppercase bg-red-500/10 px-2 py-1 rounded-full border border-red-500/20 animate-pulse">RÉSULTAT</span>}
+            {slot.isPast && <span className="text-[11px] font-bold text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded-full border border-red-500/20">Résultat Final</span>}
+            {isLive && <span className="text-[11px] font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-2 py-1 rounded-full border border-[#2dd4bf]/20 animate-pulse">Match en cours</span>}
             {isFuture && <span className="text-[11px] font-bold text-slate-400 uppercase bg-slate-800 px-2 py-1 rounded-full border border-slate-700">Prédiction</span>}
           </div>
 
@@ -164,7 +164,7 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
             </div>
             
             <div className="px-4 flex flex-col items-center justify-center">
-              {(isResult || isLive) ? (
+              {isResult ? (
                 <div className="text-2xl font-black text-white tracking-widest bg-slate-800 px-4 py-2 rounded-xl border-2 border-slate-700 shadow-inner">
                   {homeScore} - {awayScore}
                 </div>

@@ -78,7 +78,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
   };
 
   const renderDateHeader = () => {
-    const now = new Date();
+    const now = virtualTime ? virtualTime.liveTime : new Date();
     const monthYear = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const dayDate = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -91,7 +91,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
         </div>
         <div className="text-right">
           <div className="text-xl font-bold text-[#eab308]">{time}</div>
-          <div className="text-[10px] text-slate-500 uppercase">Heure locale</div>
+          <div className="text-[10px] text-slate-500 uppercase">Heure virtuelle</div>
         </div>
       </div>
     );
@@ -120,46 +120,53 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     );
   };
 
-  const generateOdds = (leagueId: string, homeTeam: string, awayTeam: string) => {
+  const generateOdds = (leagueId: string, homeTeam: string, awayTeam: string, slotCycle: number) => {
+    // Simple seeded random function
+    const seed = Math.abs(slotCycle * homeTeam.length + awayTeam.length * 13 + leagueId.charCodeAt(0));
+    const random = (x: number) => {
+      const x2 = Math.sin(seed + x) * 10000;
+      return x2 - Math.floor(x2);
+    };
+
     const isAfricaCup = leagueId === 'afr';
     const specialTeams = ['Sudan', 'Benin', 'Equatorial Guinea'];
     
     let homeOdd = 0;
     let awayOdd = 0;
-    let drawOdd = Number((Math.random() * 2 + 2.5).toFixed(2)); // 2.50 - 4.50
+    let drawOdd = Number((random(1) * 2 + 2.5).toFixed(2)); // 2.50 - 4.50
 
     // Special Africa Cup logic
     if (isAfricaCup && (specialTeams.includes(homeTeam) || specialTeams.includes(awayTeam))) {
-      const isRare = Math.random() > 0.8; // 20% chance for rare odds
+      const isRare = random(2) > 0.8; // 20% chance for rare odds
       if (isRare) {
-        const veryRare = Math.random() > 0.9; // 10% of rare are very rare (98, 100)
-        const highOdd = veryRare ? (Math.random() > 0.5 ? 98 : 100) : Number((Math.random() * 15 + 10).toFixed(2)); // 10.00 - 25.00
+        const veryRare = random(3) > 0.9; // 10% of rare are very rare (98, 100)
+        const highOdd = veryRare ? (random(4) > 0.5 ? 98 : 100) : Number((random(5) * 15 + 10).toFixed(2)); // 10.00 - 25.00
         
         if (specialTeams.includes(homeTeam)) {
           homeOdd = highOdd;
-          awayOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
+          awayOdd = Number((random(6) * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
         } else {
           awayOdd = highOdd;
-          homeOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2));
+          homeOdd = Number((random(7) * 1.3 + 1.2).toFixed(2));
         }
         return { home: homeOdd, draw: drawOdd, away: awayOdd };
       }
     }
 
     // Normal realistic odds
-    const type = Math.random();
+    const type = random(8);
     if (type > 0.6) {
       // Home favorite
-      homeOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
-      awayOdd = Number((Math.random() * 15 + 5).toFixed(2)); // 5.00 - 20.00
+      homeOdd = Number((random(9) * 1.3 + 1.2).toFixed(2)); // 1.20 - 2.50
+      awayOdd = Number((random(10) * 15 + 5).toFixed(2)); // 5.00 - 20.00
     } else if (type > 0.2) {
       // Away favorite
-      awayOdd = Number((Math.random() * 1.3 + 1.2).toFixed(2));
-      homeOdd = Number((Math.random() * 15 + 5).toFixed(2));
+      awayOdd = Number((random(11) * 1.3 + 1.2).toFixed(2));
+      homeOdd = Number((random(12) * 15 + 5).toFixed(2));
     } else {
       // Balanced
-      homeOdd = Number((Math.random() * 2.5 + 2.5).toFixed(2)); // 2.50 - 5.00
-      awayOdd = Number((Math.random() * 2.5 + 2.5).toFixed(2));
+      homeOdd = Number((random(13) * 2.5 + 2.5).toFixed(2)); // 2.50 - 5.00
+      awayOdd = Number((random(14) * 2.5 + 2.5).toFixed(2));
     }
 
     return { home: homeOdd, draw: drawOdd, away: awayOdd };
@@ -182,23 +189,22 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
                 if (teamNames.length === 0) return null;
 
-                // Use cycleIndex to ensure teams shuffle each cycle
-                const cycleSeed = virtualTime.cycleIndex;
-                const offset = slot.cycleOffset;
-                const homeIdx = Math.abs(offset * 3 + cycleSeed + 10) % teamNames.length;
-                const awayIdx = Math.abs(offset * 5 + cycleSeed + 1) % teamNames.length;
-                const finalAwayIdx = homeIdx === awayIdx ? Math.abs(offset * 7 + cycleSeed + 2) % teamNames.length : awayIdx;
+                // Use absolute slotCycle to ensure teams and scores are stable for a given time
+                const slotCycle = virtualTime.cycleIndex + slot.cycleOffset;
+                const homeIdx = Math.abs(slotCycle * 3 + 10) % teamNames.length;
+                const awayIdx = Math.abs(slotCycle * 5 + 1) % teamNames.length;
+                const finalAwayIdx = homeIdx === awayIdx ? Math.abs(slotCycle * 7 + 2) % teamNames.length : awayIdx;
                 
                 const homeTeam = teamNames[homeIdx];
                 const awayTeam = teamNames[finalAwayIdx];
                 
-                const isResult = slot.isPast;
+                const isResult = slot.showResult;
                 const isLive = slot.isCurrent;
                 const isFuture = slot.isFuture;
-                const odds = generateOdds(league.id, homeTeam, awayTeam);
+                const odds = generateOdds(league.id, homeTeam, awayTeam, slotCycle);
                 
-                // Deterministic score based on slot and teams
-                const scoreSeed = Math.abs(offset * homeTeam.length * awayTeam.length + cycleSeed);
+                // Deterministic score based on slotCycle and teams
+                const scoreSeed = Math.abs(slotCycle * homeTeam.length * awayTeam.length);
                 const homeScore = scoreSeed % 4;
                 const awayScore = (scoreSeed / 2) % 4 | 0;
                 
@@ -229,7 +235,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                             Confiance: <span className={confidence > 85 ? 'text-[#2dd4bf]' : 'text-[#eab308]'}>{confidence}%</span>
                           </span>
                         )}
-                        {isResult && <span className="text-[9px] font-bold text-red-500 uppercase bg-red-50 px-1.5 py-0.5 rounded">Résultat</span>}
+                        {slot.isPast && <span className="text-[9px] font-bold text-red-500 uppercase bg-red-50 px-1.5 py-0.5 rounded">Résultat</span>}
                         {isLive && <span className="text-[9px] font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-1.5 py-0.5 rounded animate-pulse">Live</span>}
                         {isFuture && <span className="text-[9px] font-bold text-slate-500 uppercase bg-slate-100 px-1.5 py-0.5 rounded">Prédiction</span>}
                       </div>
@@ -274,6 +280,80 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                   </div>
                 );
               })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderResults = () => {
+    if (!virtualTime) return null;
+    
+    // Generate past 50 results
+    const pastResults: any[] = [];
+    for (let i = 1; i <= 50; i++) {
+      const slotCycle = virtualTime.cycleIndex - i;
+      const slotRealTimeStart = slotCycle * 90000;
+      const slotMatchTime = new Date(slotRealTimeStart + 2 * 60000);
+      
+      const slotH = slotMatchTime.getHours();
+      const slotM = slotMatchTime.getMinutes();
+      const timeStr = `${slotH.toString().padStart(2, '0')}:${slotM.toString().padStart(2, '0')}`;
+      
+      LEAGUES.forEach(league => {
+        const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
+        if (teamNames.length === 0) return;
+
+        const homeIdx = Math.abs(slotCycle * 3 + 10) % teamNames.length;
+        const awayIdx = Math.abs(slotCycle * 5 + 1) % teamNames.length;
+        const finalAwayIdx = homeIdx === awayIdx ? Math.abs(slotCycle * 7 + 2) % teamNames.length : awayIdx;
+        
+        const homeTeam = teamNames[homeIdx];
+        const awayTeam = teamNames[finalAwayIdx];
+        
+        const scoreSeed = Math.abs(slotCycle * homeTeam.length * awayTeam.length);
+        const homeScore = scoreSeed % 4;
+        const awayScore = (scoreSeed / 2) % 4 | 0;
+        
+        pastResults.push({
+          date: slotMatchTime.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+          time: timeStr,
+          matchTime: slotMatchTime,
+          league,
+          homeTeam,
+          awayTeam,
+          homeScore,
+          awayScore
+        });
+      });
+    }
+    
+    // Sort by time descending
+    pastResults.sort((a, b) => b.matchTime.getTime() - a.matchTime.getTime());
+
+    return (
+      <div className="space-y-3 mt-4 text-left">
+        {pastResults.map((result, idx) => (
+          <div key={idx} className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center bg-slate-100 px-2 py-1 rounded">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">{result.date}</span>
+                <span className="text-xs font-bold text-slate-600">{result.time}</span>
+              </div>
+              <img src={result.league.logo} alt={result.league.name} className="w-5 h-5 object-contain ml-1" />
+            </div>
+            
+            <div className="flex-1 flex items-center justify-center gap-3 px-2">
+              <span className="text-xs font-bold text-slate-900 text-right flex-1 truncate">{result.homeTeam}</span>
+              <div className="bg-slate-900 text-white font-black text-sm px-2 py-0.5 rounded tracking-widest">
+                {result.homeScore} - {result.awayScore}
+              </div>
+              <span className="text-xs font-bold text-slate-900 text-left flex-1 truncate">{result.awayTeam}</span>
+            </div>
+            
+            <div className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded uppercase">
+              FT
             </div>
           </div>
         ))}
@@ -583,7 +663,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               <div className="p-4 text-center">
                 <Trophy className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                 <h2 className="text-xl font-bold text-slate-900 mb-2">Résultats</h2>
-                <p className="text-slate-600">Consultez les résultats des matchs précédents et l'historique de nos pronostics.</p>
+                <p className="text-slate-600 mb-6">Consultez les résultats des matchs précédents et l'historique de nos pronostics.</p>
+                {renderResults()}
               </div>
             )}
 
