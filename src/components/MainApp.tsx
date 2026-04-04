@@ -44,13 +44,13 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     return () => unsubscribe();
   }, [initialUser.id]);
 
-  const handleAnalyze = async () => {
-    if (user.tokens <= 0) return;
+  const handleAnalyze = async (amount: number = 1) => {
+    if (user.tokens < amount) return;
     
     try {
       const userRef = doc(db, 'users', user.id);
       await updateDoc(userRef, {
-        tokens: increment(-1)
+        tokens: increment(-amount)
       });
     } catch (err) {
       console.error('Failed to deduct token', err);
@@ -516,7 +516,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             )}
             
             {virtuelTab === 'multiple' && (
-              <MultipleGenerator />
+              <MultipleGenerator userTokens={user.tokens} onAnalyze={handleAnalyze} />
             )}
 
             {virtuelTab === 'best_live' && (

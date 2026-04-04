@@ -1,128 +1,218 @@
 import React, { useState } from 'react';
-import { LEAGUES, TEAMS_BY_LEAGUE, getTeamLogo } from '../data';
-import { Loader2, RefreshCw, Flame, CheckCircle } from 'lucide-react';
+import { Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
-export function MultipleGenerator() {
+interface ParsedMatch {
+  home: string;
+  away: string;
+  odds: [number, number, number];
+}
+
+interface TicketMatch {
+  home: string;
+  away: string;
+  pick: string;
+  odd: number;
+}
+
+interface Ticket {
+  id: string;
+  matches: TicketMatch[];
+  totalOdd: number;
+}
+
+interface MultipleGeneratorProps {
+  userTokens?: number;
+  onAnalyze?: (amount: number) => void;
+}
+
+export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGeneratorProps) {
+  const [inputText, setInputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [multiples, setMultiples] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const generateMultiples = () => {
-    setIsGenerating(true);
-    setTimeout(() => {
-      const newMultiples = [];
+  const parseMatches = (text: string): ParsedMatch[] => {
+    const matches: ParsedMatch[] = [];
+    const lines = text.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
       
-      for (const league of LEAGUES) {
-        const teams = TEAMS_BY_LEAGUE[league.id] || [];
-        if (teams.length < 2) continue;
-        
-        const count = league.id === 'afr' ? 20 : 10;
-        const leagueMultiples = [];
-        
-        for (let i = 0; i < count; i++) {
-          const numMatches = Math.floor(Math.random() * 3) + 3; // 3 to 5 matches per multiple
-          const matches = [];
-          let totalOdd = 1;
-          
-          for (let j = 0; j < numMatches; j++) {
-            const homeIdx = Math.floor(Math.random() * teams.length);
-            let awayIdx = Math.floor(Math.random() * teams.length);
-            while (awayIdx === homeIdx) awayIdx = Math.floor(Math.random() * teams.length);
-            
-            const homeTeam = teams[homeIdx];
-            const awayTeam = teams[awayIdx];
-            
-            const odd = Number((Math.random() * 1.5 + 1.2).toFixed(2));
-            totalOdd *= odd;
-            
-            const predictionTypes = ['1', 'X', '2', '1X', '12', 'X2', 'O 1.5', 'O 2.5', 'GG'];
-            const prediction = predictionTypes[Math.floor(Math.random() * predictionTypes.length)];
-            
-            matches.push({ homeTeam, awayTeam, odd, prediction });
-          }
-          
-          leagueMultiples.push({
-            id: Math.random().toString(36).substr(2, 9),
-            matches,
-            totalOdd: totalOdd.toFixed(2),
-            isHot: Math.random() > 0.8
-          });
-        }
-        
-        newMultiples.push({ league, combinations: leagueMultiples });
+      const matchRegex = /^(.*?)\s+vs\.?\s+(.*?)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)$/i;
+      const m = trimmed.match(matchRegex);
+      if (m) {
+        matches.push({
+          home: m[1].trim(),
+          away: m[2].trim(),
+          odds: [parseFloat(m[3]), parseFloat(m[4]), parseFloat(m[5])]
+        });
       }
+    }
+    return matches;
+  };
+
+  const getBestPick = (odds: [number, number, number]) => {
+    const [home, draw, away] = odds;
+    const options = [
+      { pick: '1', odd: home },
+      { pick: 'X', odd: draw },
+      { pick: '2', odd: away },
+    ];
+    
+    options.sort((a, b) => a.odd - b.odd);
+    
+    const rand = Math.random();
+    if (rand < 0.6) return options[0];
+    if (rand < 0.9) return options[1];
+    return options[2];
+  };
+
+  const generateTickets = async () => {
+    setError(null);
+    
+    if (userTokens < 500) {
+      setError("Fonds insuffisants. 500 tokens requis.");
+      return;
+    }
+
+    const parsedMatches = parseMatches(inputText);
+    if (parsedMatches.length < 3) {
+      setError("Veuillez insérer au moins 3 matchs valides au format: Equipe A vs Equipe B 1.50 3.20 4.10");
+      return;
+    }
+
+    setIsGenerating(true);
+
+    // Simulate analysis time (max 10 seconds, let's do 2-3 seconds for UX)
+    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    // Deduct tokens
+    if (onAnalyze) {
+      onAnalyze(500);
+    }
+
+    const numTickets = Math.floor(Math.random() * 11) + 10; // 10 to 20 tickets
+    const newTickets: Ticket[] = [];
+
+    for (let i = 0; i < numTickets; i++) {
+      // Shuffle parsed matches
+      const shuffled = [...parsedMatches].sort(() => 0.5 - Math.random());
+      const selectedMatches = shuffled.slice(0, 3); // EXACTLY 3 MATCHES
       
-      setMultiples(newMultiples);
-      setIsGenerating(false);
-    }, 1500);
+      const ticketMatches: TicketMatch[] = [];
+      let totalOdd = 1;
+
+      for (const match of selectedMatches) {
+        const pick = getBestPick(match.odds);
+        ticketMatches.push({
+          home: match.home,
+          away: match.away,
+          pick: pick.pick,
+          odd: pick.odd
+        });
+        totalOdd *= pick.odd;
+      }
+
+      newTickets.push({
+        id: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        matches: ticketMatches,
+        totalOdd: Number(totalOdd.toFixed(2))
+      });
+    }
+
+    setTickets(newTickets);
+    setIsGenerating(false);
+  };
+
+  const copyToClipboard = (ticket: Ticket) => {
+    const text = `Ticket #${ticket.id}\n\n` + 
+      ticket.matches.map((m, i) => `Match ${i + 1}:\n${m.home} vs ${m.away}\n→ Pick: ${m.pick}\n→ Odd: ${m.odd.toFixed(2)}`).join('\n\n') +
+      `\n\n💰 Total Odds: ${ticket.totalOdd.toFixed(2)}`;
+    
+    navigator.clipboard.writeText(text);
+    alert('Ticket copié !');
   };
 
   return (
     <div className="space-y-4 p-4">
-      <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800 text-center">
+      <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
         <h3 className="text-lg font-bold text-white mb-2">Générateur de Multiples</h3>
-        <p className="text-sm text-slate-400 mb-4">Générez automatiquement des combinaisons optimisées par ligue (20 pour la CAN, 10 pour les autres).</p>
+        <p className="text-sm text-slate-400 mb-4">Insérez vos matchs au format :<br/><code>Equipe A vs Equipe B 1.50 3.20 4.10</code></p>
+        
+        <textarea
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder="Mozambique vs Zambia 4.38 2.15 2.72&#10;Burkina Faso vs South Africa 2.20 3.69 2.98&#10;Morocco vs Botswana 1.22 5.06 23.18"
+          className="w-full h-32 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-[#eab308] mb-4 font-mono"
+        />
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 mb-4 flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+        )}
+
         <button 
-          onClick={generateMultiples}
+          onClick={generateTickets}
           disabled={isGenerating}
-          className="w-full bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+          className="w-full bg-[#eab308] hover:bg-[#ca8a04] disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-          {isGenerating ? 'Génération en cours...' : 'Générer les Multiples'}
+          {isGenerating ? 'Analyse en cours...' : 'Générer (500 Tokens)'}
         </button>
       </div>
 
-      {multiples.map((group, idx) => (
-        <div key={idx} className="space-y-3">
-          <div className="flex items-center gap-2 px-2">
-            <img src={group.league.logo} alt={group.league.name} className="w-5 h-5 object-contain" />
-            <h4 className="font-bold text-white">{group.league.name}</h4>
-            <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">{group.combinations.length} tickets</span>
-          </div>
+      {tickets.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="font-bold text-white flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-[#2dd4bf]" />
+            Tickets Générés ({tickets.length})
+          </h4>
           
-          <div className="grid grid-cols-1 gap-3">
-            {group.combinations.map((combo: any) => (
-              <div key={combo.id} className="bg-[#1e293b] rounded-xl border border-slate-800 overflow-hidden relative">
-                {combo.isHot && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg shadow-lg flex items-center gap-1 z-10">
-                    <Flame className="w-2.5 h-2.5" /> HOT
-                  </div>
-                )}
-                <div className="bg-slate-800/80 px-3 py-2 border-b border-slate-700/50 flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-300">Ticket #{combo.id.toUpperCase()}</span>
-                  <div className="flex items-center gap-1 text-[#eab308] font-bold text-sm">
-                    Cote Totale: {combo.totalOdd}
+          <div className="grid grid-cols-1 gap-4">
+            {tickets.map((ticket) => (
+              <div key={ticket.id} className="bg-[#1e293b] rounded-xl border border-slate-800 overflow-hidden">
+                <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700/50 flex justify-between items-center">
+                  <span className="font-bold text-white">Ticket #{ticket.id}</span>
+                  <div className="bg-slate-900 px-3 py-1 rounded-full border border-slate-700">
+                    <span className="text-slate-400 text-xs mr-1">Cote Totale:</span>
+                    <span className="text-[#eab308] font-bold">{ticket.totalOdd.toFixed(2)}</span>
                   </div>
                 </div>
+                
                 <div className="divide-y divide-slate-800/50">
-                  {combo.matches.map((match: any, mIdx: number) => (
-                    <div key={mIdx} className="p-2 flex items-center justify-between text-[11px] hover:bg-slate-800/30">
-                      <div className="flex-1 flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5">
-                          <img src={getTeamLogo(match.homeTeam, group.league.id)} alt="" className="w-3.5 h-3.5" />
-                          <span className="text-slate-300 truncate">{match.homeTeam}</span>
+                  {ticket.matches.map((match, idx) => (
+                    <div key={idx} className="p-4 hover:bg-slate-800/30 transition-colors">
+                      <div className="text-xs text-slate-500 font-bold mb-1 uppercase tracking-wider">Match {idx + 1}</div>
+                      <div className="font-medium text-white mb-2">{match.home} <span className="text-slate-500 mx-1">vs</span> {match.away}</div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400 text-sm">Pick:</span>
+                          <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded border border-slate-700">{match.pick}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <img src={getTeamLogo(match.awayTeam, group.league.id)} alt="" className="w-3.5 h-3.5" />
-                          <span className="text-slate-300 truncate">{match.awayTeam}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400 text-sm">Odd:</span>
+                          <span className="font-bold text-[#eab308]">{match.odd.toFixed(2)}</span>
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 min-w-[60px]">
-                        <span className="font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-center w-full">{match.prediction}</span>
-                        <span className="font-bold text-[#eab308]">{match.odd.toFixed(2)}</span>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="p-2 bg-slate-800/30 border-t border-slate-700/50">
-                  <button className="w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors">
-                    <CheckCircle className="w-3.5 h-3.5" /> Copier le code
+                
+                <div className="p-3 bg-slate-800/50 border-t border-slate-700/50">
+                  <button 
+                    onClick={() => copyToClipboard(ticket)}
+                    className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <CheckCircle className="w-4 h-4" /> Copier le code
                   </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      ))}
+      )}
     </div>
   );
 }

@@ -3,7 +3,10 @@ export interface User {
   phone: string;
   password: string;
   tokens: number;
-  status: 'active' | 'inactive';
+  date_activation?: number;
+  date_expiration?: number;
+  date_inscription?: string;
+  status: 'active' | 'inactive' | 'expired';
   createdAt: string;
 }
 
@@ -79,6 +82,12 @@ export interface VirtualAnalysisResult {
     firstGoalMin: string;
     multiGoals: string;
     ftts: string;
+    teamHomeOver05?: boolean;
+    teamHomeOver15?: boolean;
+    teamHomeOver25?: boolean;
+    teamAwayOver05?: boolean;
+    teamAwayOver15?: boolean;
+    teamAwayOver25?: boolean;
   };
 }
 
