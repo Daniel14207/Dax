@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../types';
-import { ArrowLeft, Search, CheckCircle, XCircle, Coins } from 'lucide-react';
+import { ArrowLeft, Search, CheckCircle, XCircle, Coins, Filter, Calendar, TrendingUp } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 
@@ -11,6 +11,8 @@ interface AdminProps {
 export default function Admin({ onExit }: AdminProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'with_tokens' | 'no_tokens'>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'tokens'>('tokens');
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [tokenAmount, setTokenAmount] = useState('');
@@ -22,8 +24,6 @@ export default function Admin({ onExit }: AdminProps) {
       snapshot.forEach((doc) => {
         clients.push(doc.data() as User);
       });
-      // Sort by creation date descending
-      clients.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setUsers(clients);
     }, (error) => {
       console.error("Erreur lors du chargement des clients en temps réel:", error);
@@ -39,23 +39,10 @@ export default function Admin({ onExit }: AdminProps) {
     const amount = parseInt(tokenAmount, 10);
     if (isNaN(amount) || amount <= 0) return;
 
-    let durationMs = 0;
-    if (amount === 10000) durationMs = 7 * 24 * 60 * 60 * 1000;
-    else if (amount === 40000) durationMs = 30 * 24 * 60 * 60 * 1000;
-    else if (amount === 100000) durationMs = 90 * 24 * 60 * 60 * 1000;
-    else {
-      durationMs = (amount / 10000) * 7 * 24 * 60 * 60 * 1000;
-    }
-
-    const now = Date.now();
-
     try {
       const userRef = doc(db, 'users', selectedUser.id);
       await updateDoc(userRef, {
-        tokens: selectedUser.tokens + amount,
-        date_activation: now,
-        date_expiration: now + durationMs,
-        status: 'active'
+        tokens: selectedUser.tokens + amount
       });
       
       setSelectedUser(null);
@@ -81,25 +68,93 @@ export default function Admin({ onExit }: AdminProps) {
     }
   };
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 20;
+  let processedUsers = users.filter(u => u.phone.includes(searchTerm) || u.id.includes(searchTerm));
 
-  const filteredUsers = users.filter(u => u.phone.includes(searchTerm) || u.id.includes(searchTerm));
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  processedUsers.sort((a, b) => {
+    if (sortBy === 'tokens') {
+      if (b.tokens !== a.tokens) return b.tokens - a.tokens;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
 
-  const isExpired = (user: User) => {
-    if (!user.date_expiration) return false;
-    return Date.now() > user.date_expiration;
-  };
+  const usersWithTokens = processedUsers.filter(u => u.tokens > 0);
+  const usersWithoutTokens = processedUsers.filter(u => u.tokens === 0);
 
-  const formatDate = (timestamp?: number) => {
-    if (!timestamp) return '-';
-    const d = new Date(timestamp);
-    return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  };
+  const renderUserCard = (user: User, hasTokens: boolean) => (
+    <div 
+      key={user.id} 
+      className={`bg-[#1e293b] rounded-xl p-4 border flex flex-col gap-4 cursor-pointer transition-colors ${
+        hasTokens 
+          ? 'border-slate-700 hover:border-amber-500/50' 
+          : 'border-slate-800 opacity-75 hover:opacity-100 hover:border-slate-600'
+      }`}
+      onClick={() => setSelectedUser(user)}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <div className="font-bold text-lg text-white">{user.phone}</div>
+          <div className="text-xs text-slate-500 font-mono mt-1">ID: {user.id}</div>
+          <div className="text-xs text-slate-500 mt-1">
+            Inscrit le: {new Date(user.createdAt).toLocaleDateString('fr-FR')}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          {hasTokens ? (
+            <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-green-500/20 text-green-400">
+              ACTIVE
+            </span>
+          ) : (
+            <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-red-500/20 text-red-400">
+              NO TOKENS
+            </span>
+          )}
+          <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.status === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-500/20 text-slate-400'}`}>
+            {user.status === 'active' ? 'Compte Actif' : 'Compte Inactif'}
+          </span>
+        </div>
+      </div>
+
+      <div className={`flex items-center justify-between p-3 rounded-lg ${hasTokens ? 'bg-slate-800/80' : 'bg-slate-800/30'}`}>
+        <div className="flex items-center gap-2">
+          <Coins className={`w-5 h-5 ${hasTokens ? 'text-[#eab308]' : 'text-slate-500'}`} />
+          <span className={`text-lg ${hasTokens ? 'font-black text-white' : 'font-medium text-slate-400'}`}>
+            {user.tokens}
+          </span>
+          <span className="text-slate-400 text-sm">Tokens</span>
+        </div>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedUser(user);
+          }}
+          className={`px-4 py-2 rounded-lg font-bold transition-colors text-sm ${
+            hasTokens 
+              ? 'bg-[#eab308] hover:bg-[#ca8a04] text-slate-900' 
+              : 'bg-slate-700 hover:bg-slate-600 text-white'
+          }`}
+        >
+          ENVOYER TOKENS
+        </button>
+      </div>
+
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          handleToggleStatus(user.id);
+        }}
+        className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+          user.status === 'active' 
+            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' 
+            : 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+        }`}
+      >
+        {user.status === 'active' ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+        {user.status === 'active' ? 'Désactiver le compte' : 'Activer le compte'}
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white flex flex-col relative">
@@ -114,115 +169,90 @@ export default function Admin({ onExit }: AdminProps) {
       </div>
 
       <div className="p-4 flex-1 overflow-y-auto">
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
-          <input 
-            type="text" 
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
-            }}
-            placeholder="Rechercher par numéro ou ID..."
-            className="w-full bg-[#1e293b] border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#2dd4bf]"
-          />
+        <div className="space-y-4 mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+            <input 
+              type="text" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher par numéro ou ID..."
+              className="w-full bg-[#1e293b] border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#2dd4bf]"
+            />
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <div className="flex bg-[#1e293b] rounded-lg p-1 border border-slate-700">
+              <button 
+                onClick={() => setFilterType('all')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                ALL
+              </button>
+              <button 
+                onClick={() => setFilterType('with_tokens')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'with_tokens' ? 'bg-green-500/20 text-green-400' : 'text-slate-400 hover:text-white'}`}
+              >
+                WITH TOKENS
+              </button>
+              <button 
+                onClick={() => setFilterType('no_tokens')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'no_tokens' ? 'bg-red-500/20 text-red-400' : 'text-slate-400 hover:text-white'}`}
+              >
+                NO TOKENS
+              </button>
+            </div>
+
+            <div className="flex bg-[#1e293b] rounded-lg p-1 border border-slate-700 ml-auto">
+              <button 
+                onClick={() => setSortBy('tokens')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'tokens' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                <TrendingUp className="w-4 h-4" /> Tokens
+              </button>
+              <button 
+                onClick={() => setSortBy('date')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'date' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Calendar className="w-4 h-4" /> Date
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          {currentUsers.length === 0 ? (
-            <div className="text-center text-slate-500 py-10">Aucun client trouvé</div>
-          ) : (
-            currentUsers.map(user => (
-              <div 
-                key={user.id} 
-                className="bg-[#1e293b] rounded-xl p-4 border border-slate-800 flex flex-col gap-4 cursor-pointer hover:border-amber-500/50 transition-colors"
-                onClick={() => setSelectedUser(user)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-bold text-lg">{user.phone}</div>
-                    <div className="text-xs text-slate-500 font-mono mt-1">ID: {user.id}</div>
-                  </div>
-                  <div className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                    user.status === 'inactive' ? 'bg-slate-500/20 text-slate-400' :
-                    (user.status === 'expired' || isExpired(user)) ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
-                  }`}>
-                    {user.status === 'inactive' ? 'Inactif' : (user.status === 'expired' || isExpired(user)) ? 'Expiré' : 'Actif'}
-                  </div>
+        <div className="space-y-8">
+          {(filterType === 'all' || filterType === 'with_tokens') && (
+            <div>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-2">
+                <span className="bg-green-500/20 text-green-400 w-8 h-8 rounded-lg flex items-center justify-center">1️⃣</span>
+                USERS WITH TOKENS ({usersWithTokens.length})
+              </h2>
+              {usersWithTokens.length === 0 ? (
+                <div className="text-center text-slate-500 py-6 bg-[#1e293b] rounded-xl border border-slate-800">Aucun client avec des tokens</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {usersWithTokens.map(user => renderUserCard(user, true))}
                 </div>
+              )}
+            </div>
+          )}
 
-                <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 bg-slate-800/30 p-3 rounded-lg">
-                  <div>
-                    <span className="block text-slate-500 mb-1">Inscription</span>
-                    <span className="text-white">{user.date_inscription || new Date(user.createdAt).toLocaleString('fr-FR')}</span>
-                  </div>
-                  <div>
-                    <span className="block text-slate-500 mb-1">Activation</span>
-                    <span className="text-white">{formatDate(user.date_activation)}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="block text-slate-500 mb-1">Expiration</span>
-                    <span className="text-[#2dd4bf] font-medium">{formatDate(user.date_expiration)}</span>
-                  </div>
+          {(filterType === 'all' || filterType === 'no_tokens') && (
+            <div>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-2">
+                <span className="bg-red-500/20 text-red-400 w-8 h-8 rounded-lg flex items-center justify-center">2️⃣</span>
+                USERS WITHOUT TOKENS ({usersWithoutTokens.length})
+              </h2>
+              {usersWithoutTokens.length === 0 ? (
+                <div className="text-center text-slate-500 py-6 bg-[#1e293b] rounded-xl border border-slate-800">Aucun client sans tokens</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {usersWithoutTokens.map(user => renderUserCard(user, false))}
                 </div>
-
-                <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-[#eab308]" />
-                    <span className="font-bold text-lg">{user.tokens}</span>
-                    <span className="text-slate-400 text-sm">Tokens</span>
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedUser(user);
-                    }}
-                    className="bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 px-4 py-2 rounded-lg font-bold transition-colors text-sm"
-                  >
-                    ENVOYER TOKENS
-                  </button>
-                </div>
-
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleStatus(user.id);
-                  }}
-                  className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-                    user.status === 'active' 
-                      ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' 
-                      : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
-                  }`}
-                >
-                  {user.status === 'active' ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
-                  {user.status === 'active' ? 'Désactiver le compte' : 'Activer le compte'}
-                </button>
-              </div>
-            ))
+              )}
+            </div>
           )}
         </div>
-
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-6 mb-4">
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-50 hover:bg-slate-700 transition-colors"
-            >
-              Précédent
-            </button>
-            <span className="text-slate-400">
-              Page {currentPage} sur {totalPages}
-            </span>
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-50 hover:bg-slate-700 transition-colors"
-            >
-              Suivant
-            </button>
-          </div>
-        )}
       </div>
 
       {selectedUser && (

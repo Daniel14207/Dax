@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { VirtualAnalysisResult } from '../types';
-import { Save, Search, Loader2, Trash2, Clock, Flame, BarChart3, Upload, Image as ImageIcon, X, Copy, CheckCircle, TrendingUp, ShieldCheck, Edit3 } from 'lucide-react';
+import { Save, Search, Loader2, Trash2, Clock, Flame, BarChart3, Upload, Image as ImageIcon, X, Copy, CheckCircle, TrendingUp, ShieldCheck, Edit3, Gem } from 'lucide-react';
 import { LEAGUES, TEAMS_BY_LEAGUE, getTeamLogo } from '../data';
 import Tesseract from 'tesseract.js';
 import { TutorialCard } from './TutorialCard';
