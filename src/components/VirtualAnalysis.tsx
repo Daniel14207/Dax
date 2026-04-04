@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { VirtualAnalysisResult } from '../types';
 import { Save, Search, Loader2, Trash2, Clock, Flame, BarChart3, Upload, Image as ImageIcon, X, Copy, CheckCircle, TrendingUp, ShieldCheck, Edit3, Gem } from 'lucide-react';
 import { LEAGUES, TEAMS_BY_LEAGUE, getTeamLogo } from '../data';
-import Tesseract from 'tesseract.js';
 import { TutorialCard } from './TutorialCard';
 
 interface Props {
@@ -12,8 +11,8 @@ interface Props {
 }
 
 export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }: Props) {
-  const [historyImages, setHistoryImages] = useState<string[]>([]);
-  const [matchImages, setMatchImages] = useState<string[]>([]);
+  const [historyText, setHistoryText] = useState('');
+  const [matchText, setMatchText] = useState('');
   const [selectedLeague, setSelectedLeague] = useState(LEAGUES[0].id);
   const [matchTime, setMatchTime] = useState('');
   
@@ -47,95 +46,18 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleHistoryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files ? (Array.from(e.target.files) as File[]) : [];
-    if (historyImages.length + files.length > 5) {
-      showToast('Maximum 5 images autorisées');
-      return;
-    }
-    const newImages = files.map(f => URL.createObjectURL(f));
-    setHistoryImages([...historyImages, ...newImages]);
-    setIsHistorySaved(false); // Reset saved state when new images are added
-  };
-
-  const handleMatchUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files ? (Array.from(e.target.files) as File[]) : [];
-    if (matchImages.length + files.length > 5) {
-      showToast('Maximum 5 images autorisées');
-      return;
-    }
-    const newImages = files.map(f => URL.createObjectURL(f));
-    setMatchImages([...matchImages, ...newImages]);
-  };
-
-  const removeHistoryImage = (index: number) => {
-    setHistoryImages(historyImages.filter((_, i) => i !== index));
-    setIsHistorySaved(false);
-  };
-
-  const removeMatchImage = (index: number) => {
-    setMatchImages(matchImages.filter((_, i) => i !== index));
-  };
-
   const handleSaveHistory = () => {
-    if (historyImages.length === 0) {
-      showToast('Veuillez uploader au moins une image d\'historique.');
+    if (!historyText.trim()) {
+      showToast('Veuillez insérer l\'historique.');
       return;
     }
     setIsSavingHistory(true);
-    // Simulate OCR and saving
+    // Simulate saving
     setTimeout(() => {
       setIsSavingHistory(false);
       setIsHistorySaved(true);
-      showToast('Historique analysé et sauvegardé avec succès !');
-    }, 2000);
-  };
-
-  const preprocessImage = (imageUrl: string): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(imageUrl);
-          return;
-        }
-        
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // Mild contrast and grayscale to avoid washing out white text on colored backgrounds
-        const contrast = 1.2; 
-        const intercept = 128 * (1 - contrast);
-        
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          
-          // Grayscale
-          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-          
-          // Contrast
-          let val = gray * contrast + intercept;
-          val = Math.max(0, Math.min(255, val));
-          
-          data[i] = val;
-          data[i + 1] = val;
-          data[i + 2] = val;
-        }
-        
-        ctx.putImageData(imageData, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
-      };
-      img.onerror = () => resolve(imageUrl);
-      img.src = imageUrl;
-    });
+      showToast('Historique sauvegardé avec succès !');
+    }, 1000);
   };
 
   const parseOCRText = (text: string) => {
@@ -341,38 +263,29 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
       showToast('Veuillez d\'abord sauvegarder un historique.');
       return;
     }
-    if (matchImages.length === 0 || !matchTime.trim()) {
-      showToast('Veuillez uploader des images de matchs et indiquer l\'heure.');
+    if (!matchText.trim() || !matchTime.trim()) {
+      showToast('Veuillez insérer les matchs et indiquer l\'heure.');
       return;
     }
 
-    onAnalyze(); // Deduct token
-    setIsAnalyzing(true);
-    showToast('Analyse locale en cours (OCR)...');
-
     try {
-      let allMatches: any[] = [];
+      onAnalyze(); // Deduct token
+      setIsAnalyzing(true);
+      showToast('Analyse en cours...');
+
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const extracted = parseOCRText(matchText);
       
-      for (const imageUrl of matchImages) {
-        const processedImageUrl = await preprocessImage(imageUrl);
-        const { data: { text } } = await Tesseract.recognize(
-          processedImageUrl,
-          'eng',
-          { logger: m => console.log(m) }
-        );
-        
-        const extracted = parseOCRText(text);
-        allMatches = [...allMatches, ...extracted];
-      }
-      
-      if (allMatches.length === 0) {
+      if (extracted.length === 0) {
         showToast("Aucune donnée valide détectée");
         setIsAnalyzing(false);
         return;
       }
       
       const batchId = Math.random().toString(36).substr(2, 9);
-      const newResults: VirtualAnalysisResult[] = allMatches.map(match => {
+      const newResults: VirtualAnalysisResult[] = extracted.map(match => {
         const { homeTeam, awayTeam, originalMatchString, homeOdd, drawOdd, awayOdd, highOdds } = match;
         
         // Calculate probabilities: prob = 1 / cote
@@ -481,7 +394,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
       showToast('Analyse terminée avec succès !');
     } catch (error) {
       console.error(error);
-      showToast("Erreur lors de l'analyse de l'image.");
+      showToast("Erreur analyse, jereo tsara ny format texte na sary");
     } finally {
       setIsAnalyzing(false);
     }
@@ -506,109 +419,121 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
       return;
     }
 
-    onAnalyze(); // Deduct token
-    setIsAnalyzing(true);
-    showToast('Analyse manuelle en cours...');
+    try {
+      onAnalyze(); // Deduct token
+      setIsAnalyzing(true);
+      showToast('Analyse manuelle en cours...');
 
-    setTimeout(() => {
-      const batchId = Math.random().toString(36).substr(2, 9);
-      
-      const prob1 = 1 / hOdd;
-      const probX = 1 / dOdd;
-      const prob2 = 1 / aOdd;
-      
-      const totalProb = prob1 + probX + prob2;
-      const normProb1 = prob1 / totalProb;
-      const normProbX = probX / totalProb;
-      const normProb2 = prob2 / totalProb;
-      
-      let ft1x2 = 'X';
-      const maxProb = Math.max(normProb1, normProbX, normProb2);
-      if (maxProb === normProb1) ft1x2 = '1';
-      else if (maxProb === normProb2) ft1x2 = '2';
-      
-      let confidence = Math.round(maxProb * 100);
-      const minOdd = Math.min(hOdd, dOdd, aOdd);
-      const maxOdd = Math.max(hOdd, dOdd, aOdd);
-      
-      const pseudoRandom = Math.random();
-      
-      let dc = '1X';
-      if (ft1x2 === '1') dc = '1X';
-      else if (ft1x2 === '2') dc = 'X2';
-      else dc = '12';
+      setTimeout(() => {
+        try {
+          const batchId = Math.random().toString(36).substr(2, 9);
+          
+          const prob1 = 1 / hOdd;
+          const probX = 1 / dOdd;
+          const prob2 = 1 / aOdd;
+          
+          const totalProb = prob1 + probX + prob2;
+          const normProb1 = prob1 / totalProb;
+          const normProbX = probX / totalProb;
+          const normProb2 = prob2 / totalProb;
+          
+          let ft1x2 = 'X';
+          const maxProb = Math.max(normProb1, normProbX, normProb2);
+          if (maxProb === normProb1) ft1x2 = '1';
+          else if (maxProb === normProb2) ft1x2 = '2';
+          
+          let confidence = Math.round(maxProb * 100);
+          const minOdd = Math.min(hOdd, dOdd, aOdd);
+          const maxOdd = Math.max(hOdd, dOdd, aOdd);
+          
+          const pseudoRandom = Math.random();
+          
+          let dc = '1X';
+          if (ft1x2 === '1') dc = '1X';
+          else if (ft1x2 === '2') dc = 'X2';
+          else dc = '12';
 
-      let exactScore = '1-1';
-      if (minOdd < 1.50) {
-        exactScore = ft1x2 === '1' ? (pseudoRandom > 0.5 ? '2-0' : '3-0') : (pseudoRandom > 0.5 ? '0-2' : '0-3');
-      } else if (minOdd < 2.00) {
-        exactScore = ft1x2 === '1' ? '2-1' : '1-2';
-      } else {
-        exactScore = pseudoRandom > 0.5 ? '1-1' : (ft1x2 === '1' ? '1-0' : '0-1');
-      }
+          let exactScore = '1-1';
+          if (minOdd < 1.50) {
+            exactScore = ft1x2 === '1' ? (pseudoRandom > 0.5 ? '2-0' : '3-0') : (pseudoRandom > 0.5 ? '0-2' : '0-3');
+          } else if (minOdd < 2.00) {
+            exactScore = ft1x2 === '1' ? '2-1' : '1-2';
+          } else {
+            exactScore = pseudoRandom > 0.5 ? '1-1' : (ft1x2 === '1' ? '1-0' : '0-1');
+          }
 
-      const isHotMatch = minOdd < 1.50 || (maxOdd - minOdd > 3);
-      
-      let analysis = '';
-      if (minOdd < 1.50) {
-        analysis = `Cote très basse pour le favori (${minOdd.toFixed(2)}), forte probabilité de victoire.`;
-      } else if (minOdd < 2.00) {
-        analysis = `Match avec un léger avantage, mais qui reste serré.`;
-      } else if (Math.abs(hOdd - aOdd) < 0.5) {
-        analysis = `Match très équilibré, les cotes sont proches. Possibilité de match nul.`;
-      } else {
-        analysis = `Cotes élevées, match potentiellement imprévisible.`;
-      }
+          const isHotMatch = minOdd < 1.50 || (maxOdd - minOdd > 3);
+          
+          let analysis = '';
+          if (minOdd < 1.50) {
+            analysis = `Cote très basse pour le favori (${minOdd.toFixed(2)}), forte probabilité de victoire.`;
+          } else if (minOdd < 2.00) {
+            analysis = `Match avec un léger avantage, mais qui reste serré.`;
+          } else if (Math.abs(hOdd - aOdd) < 0.5) {
+            analysis = `Match très équilibré, les cotes sont proches. Possibilité de match nul.`;
+          } else {
+            analysis = `Cotes élevées, match potentiellement imprévisible.`;
+          }
 
-      const newResult: VirtualAnalysisResult = {
-        batchId,
-        matchId: Math.random().toString(36).substr(2, 9),
-        leagueId: manualLeague,
-        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-        homeTeam: manualHomeTeam,
-        awayTeam: manualAwayTeam,
-        originalMatchString: `${manualHomeTeam} vs ${manualAwayTeam}`,
-        isHotMatch,
-        confidence,
-        extractedOdds: { home: hOdd, draw: dOdd, away: aOdd },
-        highOdds: [],
-        results: {
-          analysis,
-          ft1x2,
-          ht1x2: ft1x2 === '1' ? '1' : (ft1x2 === '2' ? '2' : 'X'),
-          dc,
-          dcHt: dc,
-          exactScore,
-          htScore: ft1x2 === '1' ? '1-0' : (ft1x2 === '2' ? '0-1' : '0-0'),
-          ou05: 'Over',
-          ou15: minOdd < 1.80 ? 'Over' : 'Under',
-          ou25: minOdd < 1.50 ? 'Over' : 'Under',
-          ou35: minOdd < 1.30 ? 'Over' : 'Under',
-          htft: ft1x2 === '1' ? '1/1' : (ft1x2 === '2' ? '2/2' : 'X/X'),
-          totalGoals: minOdd < 1.50 ? '3' : '2',
-          ggng: minOdd < 1.60 ? 'NG' : 'GG',
-          btts: minOdd < 1.60 ? 'No' : 'Yes',
-          teamTotals: ft1x2 === '1' ? 'H: 2 | A: 0' : (ft1x2 === '2' ? 'H: 0 | A: 2' : 'H: 1 | A: 1'),
-          oddEven: pseudoRandom > 0.5 ? 'Odd' : 'Even',
-          firstGoalMin: `${Math.floor(pseudoRandom * 30) + 5}'`,
-          multiGoals: minOdd < 1.50 ? '2-4' : '1-3',
-          ftts: ft1x2 === '1' ? 'Home' : (ft1x2 === '2' ? 'Away' : 'None')
+          const newResult: VirtualAnalysisResult = {
+            batchId,
+            matchId: Math.random().toString(36).substr(2, 9),
+            leagueId: manualLeague,
+            time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            homeTeam: manualHomeTeam,
+            awayTeam: manualAwayTeam,
+            originalMatchString: `${manualHomeTeam} vs ${manualAwayTeam}`,
+            isHotMatch,
+            confidence,
+            extractedOdds: { home: hOdd, draw: dOdd, away: aOdd },
+            highOdds: [],
+            results: {
+              analysis,
+              ft1x2,
+              ht1x2: ft1x2 === '1' ? '1' : (ft1x2 === '2' ? '2' : 'X'),
+              dc,
+              dcHt: dc,
+              exactScore,
+              htScore: ft1x2 === '1' ? '1-0' : (ft1x2 === '2' ? '0-1' : '0-0'),
+              ou05: 'Over',
+              ou15: minOdd < 1.80 ? 'Over' : 'Under',
+              ou25: minOdd < 1.50 ? 'Over' : 'Under',
+              ou35: minOdd < 1.30 ? 'Over' : 'Under',
+              htft: ft1x2 === '1' ? '1/1' : (ft1x2 === '2' ? '2/2' : 'X/X'),
+              totalGoals: minOdd < 1.50 ? '3' : '2',
+              ggng: minOdd < 1.60 ? 'NG' : 'GG',
+              btts: minOdd < 1.60 ? 'No' : 'Yes',
+              teamTotals: ft1x2 === '1' ? 'H: 2 | A: 0' : (ft1x2 === '2' ? 'H: 0 | A: 2' : 'H: 1 | A: 1'),
+              oddEven: pseudoRandom > 0.5 ? 'Odd' : 'Even',
+              firstGoalMin: `${Math.floor(pseudoRandom * 30) + 5}'`,
+              multiGoals: minOdd < 1.50 ? '2-4' : '1-3',
+              ftts: ft1x2 === '1' ? 'Home' : (ft1x2 === '2' ? 'Away' : 'None')
+            }
+          };
+
+          const updatedResults = [newResult, ...results];
+          setResults(updatedResults);
+          localStorage.setItem('virtualAnalyses', JSON.stringify(updatedResults));
+          showToast('Analyse manuelle terminée !');
+          
+          // Clear form
+          setManualHomeTeam('');
+          setManualAwayTeam('');
+          setManualOdd1('');
+          setManualOddX('');
+          setManualOdd2('');
+        } catch (err) {
+          console.error(err);
+          showToast("Erreur analyse, jereo tsara ny format texte na sary");
+        } finally {
+          setIsAnalyzing(false);
         }
-      };
-
-      const updatedResults = [newResult, ...results];
-      setResults(updatedResults);
-      localStorage.setItem('virtualAnalyses', JSON.stringify(updatedResults));
-      showToast('Analyse manuelle terminée !');
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      showToast("Erreur analyse, jereo tsara ny format texte na sary");
       setIsAnalyzing(false);
-      
-      // Clear form
-      setManualHomeTeam('');
-      setManualAwayTeam('');
-      setManualOdd1('');
-      setManualOddX('');
-      setManualOdd2('');
-    }, 1500);
+    }
   };
 
   const clearResults = () => {
@@ -720,18 +645,18 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
       )}
 
       <TutorialCard 
-        title="Ahoana ny fampidirana sary"
+        title="Ahoana ny fampidirana texte"
         content={
           <ul className="list-disc pl-5 space-y-1">
-            <li>Ampidiro sary misy match sy cote mazava tsara</li>
-            <li>Tsy tapaka ny sary</li>
-            <li>Tsy manjavozavo</li>
+            <li>Ampidiro eto ny match amin'ny format:<br/><code>Ekipa1 vs Ekipa2 cote1 coteX cote2</code></li>
+            <li>Ohatra:<br/><code>Mozambique vs Zambia 4.38 2.15 2.72</code></li>
           </ul>
         }
         explanation={
           <ul className="list-disc pl-5 space-y-1">
-            <li>Ny système dia mamaky ny texte ao anaty sary (OCR)</li>
-            <li>Raha tsy mazava ny sary dia tsy marina ny analyse</li>
+            <li>Tsy tokony hisy diso ny anaran'ny équipe</li>
+            <li>Tsy tokony hiova ny ordre</li>
+            <li>Ny cote dia tsy maintsy 3 (1 / X / 2)</li>
           </ul>
         }
       />
@@ -739,72 +664,42 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
       <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <span className="bg-[#2dd4bf] text-slate-900 w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
-          Historique (Upload)
+          Historique (Texte)
         </h3>
         
         <div className="mb-4">
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-700 border-dashed rounded-lg cursor-pointer bg-slate-800/50 hover:bg-slate-800 transition-colors">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <Upload className="w-8 h-8 mb-3 text-slate-400" />
-              <p className="mb-2 text-sm text-slate-400"><span className="font-semibold text-[#2dd4bf]">Cliquez</span> ou glissez vos images</p>
-              <p className="text-xs text-slate-500">PNG, JPG (Max 5 images)</p>
-            </div>
-            <input type="file" className="hidden" multiple accept="image/png, image/jpeg" onChange={handleHistoryUpload} />
-          </label>
+          <textarea
+            value={historyText}
+            onChange={(e) => setHistoryText(e.target.value)}
+            placeholder="Collez l'historique ici..."
+            className="w-full h-32 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-[#2dd4bf] resize-none"
+          />
         </div>
-
-        {historyImages.length > 0 && (
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-            {historyImages.map((img, idx) => (
-              <div key={idx} className="relative flex-shrink-0">
-                <img src={img} alt={`History ${idx}`} className="w-20 h-20 object-cover rounded-lg border border-slate-700" />
-                <button onClick={() => removeHistoryImage(idx)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
 
         <button 
           onClick={handleSaveHistory}
-          disabled={isSavingHistory || historyImages.length === 0}
+          disabled={isSavingHistory || !historyText.trim()}
           className="w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           {isSavingHistory ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-          {isSavingHistory ? 'Analyse OCR en cours...' : 'Sauvegarder historique'}
+          {isSavingHistory ? 'Sauvegarde en cours...' : 'Sauvegarder historique'}
         </button>
       </div>
 
       <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <span className="bg-[#eab308] text-slate-900 w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
-          Nouvelle Analyse (Upload Matchs)
+          Nouvelle Analyse (Texte Matchs)
         </h3>
         
         <div className="mb-4">
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-700 border-dashed rounded-lg cursor-pointer bg-slate-800/50 hover:bg-slate-800 transition-colors">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <ImageIcon className="w-8 h-8 mb-3 text-slate-400" />
-              <p className="mb-2 text-sm text-slate-400"><span className="font-semibold text-[#eab308]">Uploadez</span> les matchs à analyser</p>
-              <p className="text-xs text-slate-500">PNG, JPG (Max 5 images)</p>
-            </div>
-            <input type="file" className="hidden" multiple accept="image/png, image/jpeg" onChange={handleMatchUpload} />
-          </label>
+          <textarea
+            value={matchText}
+            onChange={(e) => setMatchText(e.target.value)}
+            placeholder="Equipe A vs Equipe B 1.50 3.20 4.10"
+            className="w-full h-32 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-[#eab308] resize-none"
+          />
         </div>
-
-        {matchImages.length > 0 && (
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-            {matchImages.map((img, idx) => (
-              <div key={idx} className="relative flex-shrink-0">
-                <img src={img} alt={`Match ${idx}`} className="w-20 h-20 object-cover rounded-lg border border-slate-700" />
-                <button onClick={() => removeMatchImage(idx)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className="space-y-3 mb-4">
           <select 
@@ -825,7 +720,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
         </div>
         <button 
           onClick={handleAnalyze}
-          disabled={isAnalyzing || userTokens <= 0 || matchImages.length === 0}
+          disabled={isAnalyzing || userTokens <= 0 || !matchText.trim()}
           className={`w-full font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
             userTokens <= 0 
               ? 'bg-red-500/20 text-red-400 border border-red-500/50' 
@@ -935,6 +830,32 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               <Trash2 className="w-4 h-4" /> Effacer
             </button>
           </div>
+
+          {/* COTES > 10 SECTION */}
+          {results.some(res => res.highOdds && res.highOdds.length > 0) && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+              <h4 className="font-bold text-red-400 mb-3 flex items-center gap-2">
+                <Flame className="w-5 h-5" /> COTES PLUS DE 10 DÉTECTÉES
+              </h4>
+              <div className="space-y-2">
+                {results.map(res => {
+                  if (!res.highOdds || res.highOdds.length === 0) return null;
+                  return (
+                    <div key={`high-${res.matchId}`} className="bg-slate-800/80 p-3 rounded-lg flex justify-between items-center border border-slate-700">
+                      <span className="text-white font-medium text-sm">{res.homeTeam} vs {res.awayTeam}</span>
+                      <div className="flex gap-2">
+                        {res.highOdds.map((odd, idx) => (
+                          <span key={idx} className="bg-red-500 text-white font-bold px-2 py-1 rounded text-xs">
+                            {odd.pick}: {odd.odd.toFixed(2)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* INDIVIDUAL MATCH RESULTS */}
           <div className="space-y-4">

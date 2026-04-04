@@ -35,74 +35,85 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
       return;
     }
 
-    onAnalyze(); // Deduct token
-    setIsAnalyzing(true);
+    try {
+      onAnalyze(); // Deduct token
+      setIsAnalyzing(true);
 
-    // Simulate 5s analysis
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      
-      const generatedRounds: AviatorRound[] = [];
-      const [startH, startM] = startTime.split(':').map(Number);
-      
-      let currentH = startH;
-      let currentM = startM;
-      
-      // Generate for 4 hours (240 minutes)
-      for (let i = 0; i < 240; i++) {
-        const randomSeconds = Math.floor(Math.random() * 60);
-        const timeStr = `${currentH.toString().padStart(2, '0')}:${currentM.toString().padStart(2, '0')}:${randomSeconds.toString().padStart(2, '0')}`;
-        
-        // Pause logic: if time is 22:30 to 22:34, skip generation but increment time
-        if (currentH === 22 && currentM >= 30 && currentM < 35) {
-          // Pause 5 mins
-        } else {
-          // Generate realistic multipliers
-          let m1 = 0;
-          let m2 = 0;
-          let risk = 0;
+      // Simulate 5s analysis
+      setTimeout(() => {
+        try {
+          const generatedRounds: AviatorRound[] = [];
+          const [startH, startM] = startTime.split(':').map(Number);
           
-          const rand = Math.random();
-          if (rand < 0.5) {
-            // 50% chance of 1.00 - 1.99
-            m1 = Number((Math.random() * 0.99 + 1.00).toFixed(2));
-            m2 = Number((Math.random() * 0.99 + 1.00).toFixed(2));
-            risk = Number((Math.random() * 2 + 1).toFixed(2));
-          } else if (rand < 0.8) {
-            // 30% chance of 2.00 - 4.99
-            m1 = Number((Math.random() * 2.99 + 2.00).toFixed(2));
-            m2 = Number((Math.random() * 2.99 + 2.00).toFixed(2));
-            risk = Number((Math.random() * 5 + 3).toFixed(2));
-          } else if (rand < 0.95) {
-            // 15% chance of 5.00 - 49.99
-            m1 = Number((Math.random() * 44.99 + 5.00).toFixed(2));
-            m2 = Number((Math.random() * 44.99 + 5.00).toFixed(2));
-            risk = Number((Math.random() * 20 + 10).toFixed(2));
-          } else {
-            // 5% chance of 50+
-            m1 = Number((Math.random() * 50 + 50.00).toFixed(2));
-            m2 = Number((Math.random() * 50 + 50.00).toFixed(2));
-            risk = Number((Math.random() * 50 + 50).toFixed(2));
+          let currentH = startH;
+          let currentM = startM;
+          
+          // Generate for 4 hours (240 minutes)
+          for (let i = 0; i < 240; i++) {
+            const randomSeconds = Math.floor(Math.random() * 60);
+            const timeStr = `${currentH.toString().padStart(2, '0')}:${currentM.toString().padStart(2, '0')}:${randomSeconds.toString().padStart(2, '0')}`;
+            
+            // Pause logic: if time is 22:30 to 22:34, skip generation but increment time
+            if (currentH === 22 && currentM >= 30 && currentM < 35) {
+              // Pause 5 mins
+            } else {
+              // Generate realistic multipliers
+              let m1 = 0;
+              let m2 = 0;
+              let risk = 0;
+              
+              const rand = Math.random();
+              if (rand < 0.5) {
+                // 50% chance of 1.00 - 1.99
+                m1 = Number((Math.random() * 0.99 + 1.00).toFixed(2));
+                m2 = Number((Math.random() * 0.99 + 1.00).toFixed(2));
+                risk = Number((Math.random() * 2 + 1).toFixed(2));
+              } else if (rand < 0.8) {
+                // 30% chance of 2.00 - 4.99
+                m1 = Number((Math.random() * 2.99 + 2.00).toFixed(2));
+                m2 = Number((Math.random() * 2.99 + 2.00).toFixed(2));
+                risk = Number((Math.random() * 5 + 3).toFixed(2));
+              } else if (rand < 0.95) {
+                // 15% chance of 5.00 - 49.99
+                m1 = Number((Math.random() * 44.99 + 5.00).toFixed(2));
+                m2 = Number((Math.random() * 44.99 + 5.00).toFixed(2));
+                risk = Number((Math.random() * 20 + 10).toFixed(2));
+              } else {
+                // 5% chance of 50+
+                m1 = Number((Math.random() * 50 + 50.00).toFixed(2));
+                m2 = Number((Math.random() * 50 + 50.00).toFixed(2));
+                risk = Number((Math.random() * 50 + 50).toFixed(2));
+              }
+
+              generatedRounds.push({
+                time: timeStr,
+                multiplier1: m1,
+                multiplier2: m2,
+                risk: risk
+              });
+            }
+            
+            currentM++;
+            if (currentM >= 60) {
+              currentM = 0;
+              currentH = (currentH + 1) % 24;
+            }
           }
 
-          generatedRounds.push({
-            time: timeStr,
-            multiplier1: m1,
-            multiplier2: m2,
-            risk: risk
-          });
+          setRounds(generatedRounds);
+          localStorage.setItem('aviatorAnalyses', JSON.stringify(generatedRounds));
+        } catch (err) {
+          console.error(err);
+          alert("Erreur analyse, jereo tsara ny format texte na sary");
+        } finally {
+          setIsAnalyzing(false);
         }
-        
-        currentM++;
-        if (currentM >= 60) {
-          currentM = 0;
-          currentH = (currentH + 1) % 24;
-        }
-      }
-
-      setRounds(generatedRounds);
-      localStorage.setItem('aviatorAnalyses', JSON.stringify(generatedRounds));
-    }, 5000);
+      }, 5000);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur analyse, jereo tsara ny format texte na sary");
+      setIsAnalyzing(false);
+    }
   };
 
   const clearResults = () => {

@@ -40,13 +40,13 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
       const trimmed = line.trim();
       if (!trimmed) continue;
       
-      const matchRegex = /^(.*?)\s+vs\.?\s+(.*?)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)$/i;
+      const matchRegex = /^(.*?)\s+(?:vs|v|-|\/)\s+(.*?)\s+(\d+(?:[.,]\d+)?)\s*(?:X|-)?\s*(\d+(?:[.,]\d+)?)\s*(?:2|-)?\s*(\d+(?:[.,]\d+)?)\s*$/i;
       const m = trimmed.match(matchRegex);
       if (m) {
         matches.push({
           home: m[1].trim(),
           away: m[2].trim(),
-          odds: [parseFloat(m[3]), parseFloat(m[4]), parseFloat(m[5])]
+          odds: [parseFloat(m[3].replace(',', '.')), parseFloat(m[4].replace(',', '.')), parseFloat(m[5].replace(',', '.'))]
         });
       }
     }
@@ -85,53 +85,59 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
       return;
     }
 
-    const parsedMatches = parseMatches(inputText);
-    if (parsedMatches.length < 3) {
-      setError("Veuillez insérer au moins 3 matchs valides au format: Equipe A vs Equipe B 1.50 3.20 4.10");
-      return;
-    }
-
-    setIsGenerating(true);
-
-    // Simulate analysis time (max 10 seconds, let's do 2-3 seconds for UX)
-    await new Promise(resolve => setTimeout(resolve, 2500));
-
-    // Deduct tokens
-    if (onAnalyze) {
-      onAnalyze(500);
-    }
-
-    const numTickets = isVip ? 10 : (Math.floor(Math.random() * 11) + 10); // VIP generates exactly 10 premium tickets
-    const newTickets: Ticket[] = [];
-
-    for (let i = 0; i < numTickets; i++) {
-      // Shuffle parsed matches
-      const shuffled = [...parsedMatches].sort(() => 0.5 - Math.random());
-      const selectedMatches = shuffled.slice(0, 3); // EXACTLY 3 MATCHES
-      
-      const ticketMatches: TicketMatch[] = [];
-      let totalOdd = 1;
-
-      for (const match of selectedMatches) {
-        const pick = getBestPick(match.odds, isVip);
-        ticketMatches.push({
-          home: match.home,
-          away: match.away,
-          pick: pick.pick,
-          odd: pick.odd
-        });
-        totalOdd *= pick.odd;
+    try {
+      const parsedMatches = parseMatches(inputText);
+      if (parsedMatches.length < 3) {
+        setError("Veuillez insérer au moins 3 matchs valides au format: Equipe A vs Equipe B 1.50 3.20 4.10");
+        return;
       }
 
-      newTickets.push({
-        id: Math.random().toString(36).substring(2, 8).toUpperCase(),
-        matches: ticketMatches,
-        totalOdd: Number(totalOdd.toFixed(2))
-      });
-    }
+      setIsGenerating(true);
 
-    setTickets(newTickets);
-    setIsGenerating(false);
+      // Simulate analysis time (max 10 seconds, let's do 2-3 seconds for UX)
+      await new Promise(resolve => setTimeout(resolve, 2500));
+
+      // Deduct tokens
+      if (onAnalyze) {
+        onAnalyze(500);
+      }
+
+      const numTickets = 20; // EXACTLY 20 TICKETS
+      const newTickets: Ticket[] = [];
+
+      for (let i = 0; i < numTickets; i++) {
+        // Shuffle parsed matches
+        const shuffled = [...parsedMatches].sort(() => 0.5 - Math.random());
+        const selectedMatches = shuffled.slice(0, 3); // EXACTLY 3 MATCHES
+        
+        const ticketMatches: TicketMatch[] = [];
+        let totalOdd = 1;
+
+        for (const match of selectedMatches) {
+          const pick = getBestPick(match.odds, isVip);
+          ticketMatches.push({
+            home: match.home,
+            away: match.away,
+            pick: pick.pick,
+            odd: pick.odd
+          });
+          totalOdd *= pick.odd;
+        }
+
+        newTickets.push({
+          id: Math.random().toString(36).substring(2, 8).toUpperCase(),
+          matches: ticketMatches,
+          totalOdd: Number(totalOdd.toFixed(2))
+        });
+      }
+
+      setTickets(newTickets);
+    } catch (err) {
+      console.error(err);
+      setError("Erreur analyse, jereo tsara ny format texte na sary");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const copyToClipboard = (ticket: Ticket) => {
