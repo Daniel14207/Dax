@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { TutorialCard } from './TutorialCard';
 
 interface ParsedMatch {
   home: string;
@@ -23,9 +24,10 @@ interface Ticket {
 interface MultipleGeneratorProps {
   userTokens?: number;
   onAnalyze?: (amount: number) => void;
+  isVip?: boolean;
 }
 
-export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGeneratorProps) {
+export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: MultipleGeneratorProps) {
   const [inputText, setInputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -51,7 +53,7 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGenerat
     return matches;
   };
 
-  const getBestPick = (odds: [number, number, number]) => {
+  const getBestPick = (odds: [number, number, number], isVipMode: boolean) => {
     const [home, draw, away] = odds;
     const options = [
       { pick: '1', odd: home },
@@ -61,10 +63,18 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGenerat
     
     options.sort((a, b) => a.odd - b.odd);
     
-    const rand = Math.random();
-    if (rand < 0.6) return options[0];
-    if (rand < 0.9) return options[1];
-    return options[2];
+    if (isVipMode) {
+      // VIP: higher probability, smarter grouping. 
+      // 85% chance of picking the absolute favorite, 15% chance of picking the second best (medium risk)
+      const rand = Math.random();
+      if (rand < 0.85) return options[0];
+      return options[1];
+    } else {
+      const rand = Math.random();
+      if (rand < 0.6) return options[0];
+      if (rand < 0.9) return options[1];
+      return options[2];
+    }
   };
 
   const generateTickets = async () => {
@@ -91,7 +101,7 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGenerat
       onAnalyze(500);
     }
 
-    const numTickets = Math.floor(Math.random() * 11) + 10; // 10 to 20 tickets
+    const numTickets = isVip ? 10 : (Math.floor(Math.random() * 11) + 10); // VIP generates exactly 10 premium tickets
     const newTickets: Ticket[] = [];
 
     for (let i = 0; i < numTickets; i++) {
@@ -103,7 +113,7 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGenerat
       let totalOdd = 1;
 
       for (const match of selectedMatches) {
-        const pick = getBestPick(match.odds);
+        const pick = getBestPick(match.odds, isVip);
         ticketMatches.push({
           home: match.home,
           away: match.away,
@@ -135,21 +145,38 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGenerat
 
   return (
     <div className="space-y-4 p-4">
-      <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
-        <h3 className="text-lg font-bold text-white mb-2">Générateur de Multiples</h3>
-        <p className="text-sm text-slate-400 mb-4">Insérez vos matchs au format :<br/><code>Equipe A vs Equipe B 1.50 3.20 4.10</code></p>
+      <TutorialCard 
+        title="Ahoana ny fampidirana texte (Multiple)"
+        content={
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Ampidiro eto ny match amin'ny format:<br/><code>Ekipa1 vs Ekipa2 cote1 coteX cote2</code></li>
+            <li>Ohatra:<br/><code>Mozambique vs Zambia 4.38 2.15 2.72</code></li>
+          </ul>
+        }
+        explanation={
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Tsy tokony hisy diso ny anaran'ny équipe</li>
+            <li>Tsy tokony hiova ny ordre</li>
+            <li>Ny cote dia tsy maintsy 3 (1 / X / 2)</li>
+          </ul>
+        }
+      />
+
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-900 mb-2">Générateur de Multiples</h3>
+        <p className="text-sm text-slate-600 mb-4">Insérez vos matchs au format :<br/><code>Equipe A vs Equipe B 1.50 3.20 4.10</code></p>
         
         <textarea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Mozambique vs Zambia 4.38 2.15 2.72&#10;Burkina Faso vs South Africa 2.20 3.69 2.98&#10;Morocco vs Botswana 1.22 5.06 23.18"
-          className="w-full h-32 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-[#eab308] mb-4 font-mono"
+          className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-900 text-sm focus:outline-none focus:border-[#eab308] mb-4 font-mono"
         />
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 mb-4 flex items-start gap-2">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex items-start gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
@@ -165,34 +192,34 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGenerat
 
       {tickets.length > 0 && (
         <div className="space-y-4">
-          <h4 className="font-bold text-white flex items-center gap-2">
+          <h4 className="font-bold text-slate-900 flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-[#2dd4bf]" />
             Tickets Générés ({tickets.length})
           </h4>
           
           <div className="grid grid-cols-1 gap-4">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="bg-[#1e293b] rounded-xl border border-slate-800 overflow-hidden">
-                <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700/50 flex justify-between items-center">
-                  <span className="font-bold text-white">Ticket #{ticket.id}</span>
-                  <div className="bg-slate-900 px-3 py-1 rounded-full border border-slate-700">
-                    <span className="text-slate-400 text-xs mr-1">Cote Totale:</span>
+              <div key={ticket.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                  <span className="font-bold text-slate-900">Ticket #{ticket.id}</span>
+                  <div className="bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                    <span className="text-slate-500 text-xs mr-1">Cote Totale:</span>
                     <span className="text-[#eab308] font-bold">{ticket.totalOdd.toFixed(2)}</span>
                   </div>
                 </div>
                 
-                <div className="divide-y divide-slate-800/50">
+                <div className="divide-y divide-slate-100">
                   {ticket.matches.map((match, idx) => (
-                    <div key={idx} className="p-4 hover:bg-slate-800/30 transition-colors">
+                    <div key={idx} className="p-4 hover:bg-slate-50 transition-colors">
                       <div className="text-xs text-slate-500 font-bold mb-1 uppercase tracking-wider">Match {idx + 1}</div>
-                      <div className="font-medium text-white mb-2">{match.home} <span className="text-slate-500 mx-1">vs</span> {match.away}</div>
+                      <div className="font-medium text-slate-900 mb-2">{match.home} <span className="text-slate-400 mx-1">vs</span> {match.away}</div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-400 text-sm">Pick:</span>
-                          <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded border border-slate-700">{match.pick}</span>
+                          <span className="text-slate-500 text-sm">Pick:</span>
+                          <span className="font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded border border-slate-200">{match.pick}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-400 text-sm">Odd:</span>
+                          <span className="text-slate-500 text-sm">Odd:</span>
                           <span className="font-bold text-[#eab308]">{match.odd.toFixed(2)}</span>
                         </div>
                       </div>
@@ -200,10 +227,10 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze }: MultipleGenerat
                   ))}
                 </div>
                 
-                <div className="p-3 bg-slate-800/50 border-t border-slate-700/50">
+                <div className="p-3 bg-slate-50 border-t border-slate-200">
                   <button 
                     onClick={() => copyToClipboard(ticket)}
-                    className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
                   >
                     <CheckCircle className="w-4 h-4" /> Copier le code
                   </button>

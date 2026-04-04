@@ -9,6 +9,7 @@ import { MatchDetailsModal } from './MatchDetailsModal';
 import { MultipleGenerator } from './MultipleGenerator';
 import { db } from '../firebase';
 import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
+import { TutorialCard } from './TutorialCard';
 
 interface MainAppProps {
   user: User;
@@ -523,8 +524,24 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               <div className="p-4 text-center">
                 <Activity className="w-12 h-12 text-[#2dd4bf] mx-auto mb-4" />
                 <h2 className="text-xl font-bold text-slate-900 mb-2">Best Live</h2>
-                <p className="text-slate-600">Analyse en temps réel des meilleurs matchs en cours pour des paris en direct.</p>
-                <div className="mt-6">
+                <p className="text-slate-600 mb-4">Analyse en temps réel des meilleurs matchs en cours pour des paris en direct.</p>
+                <div className="text-left">
+                  <TutorialCard 
+                    title="Ahoana ny fampiasana Best Live"
+                    content={
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Ity section ity dia natokana ho an'ny match efa mandeha (Live)</li>
+                        <li>Mampiasa sary na manual analyse mitovy amin'ny mahazatra</li>
+                      </ul>
+                    }
+                    explanation={
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Ny analyse eto dia mifantoka kokoa amin'ny zava-mitranga mandritra ny match</li>
+                      </ul>
+                    }
+                  />
+                </div>
+                <div className="mt-6 text-left">
                   <VirtualAnalysis userTokens={user.tokens} onAnalyze={handleAnalyze} />
                 </div>
               </div>
@@ -534,8 +551,31 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               <div className="p-4 text-center">
                 <Gem className="w-12 h-12 text-[#eab308] mx-auto mb-4" />
                 <h2 className="text-xl font-bold text-slate-900 mb-2">Espace VIP</h2>
-                <p className="text-slate-600">Accédez aux pronostics exclusifs avec un taux de réussite supérieur à 90%.</p>
-                <button className="mt-6 bg-[#eab308] text-slate-900 font-bold px-6 py-3 rounded-lg shadow-lg">Devenir VIP</button>
+                <p className="text-slate-600 mb-6">Accédez aux pronostics exclusifs avec un taux de réussite supérieur à 90%.</p>
+                
+                {user.tokens < 10000 ? (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                    <ShieldCheck className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-red-700 mb-2">Accès Refusé</h3>
+                    <p className="text-red-600 font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
+                  </div>
+                ) : (
+                  <div className="text-left space-y-8">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <Search className="w-5 h-5 text-[#eab308]" /> VIP ULTRA ANALYSE
+                      </h3>
+                      <VirtualAnalysis userTokens={user.tokens} onAnalyze={handleAnalyze} isVip={true} />
+                    </div>
+                    
+                    <div className="border-t border-slate-200 pt-8">
+                      <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-[#eab308]" /> VIP MULTIPLE
+                      </h3>
+                      <MultipleGenerator userTokens={user.tokens} onAnalyze={handleAnalyze} isVip={true} />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -596,7 +636,10 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               <div className="p-4 text-center">
                 <Gem className="w-12 h-12 text-purple-500 mx-auto mb-4" />
                 <h2 className="text-xl font-bold text-slate-900 mb-2">Aviator VIP</h2>
-                <p className="text-slate-600">Signaux en temps réel via Telegram pour nos membres VIP.</p>
+                <p className="text-slate-600 mb-6">Signaux en temps réel via Telegram pour nos membres VIP.</p>
+                <div className="text-left">
+                  <AviatorSystem userTokens={user.tokens} onAnalyze={handleAnalyze} isVip={true} />
+                </div>
               </div>
             )}
             {aviatorTab === 'admin' && (

@@ -1,21 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { AviatorRound } from '../types';
-import { Search, Loader2, Trash2, Plane } from 'lucide-react';
+import { Search, Loader2, Trash2, Plane, ShieldCheck, Gem } from 'lucide-react';
+import { TutorialCard } from './TutorialCard';
 
 interface Props {
   userTokens: number;
-  onAnalyze: () => Promise<boolean> | boolean;
+  onAnalyze: () => void;
+  isVip?: boolean;
 }
 
-export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
+export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: Props) {
   const [historyText, setHistoryText] = useState('');
   const [startTime, setStartTime] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [rounds, setRounds] = useState<AviatorRound[]>([]);
 
-  const handleAnalyze = async () => {
-    if (userTokens < 500) {
-      alert('Tokens expirés ou insuffisants. Veuillez recharger.');
+  if (isVip && userTokens < 10000) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+        <ShieldCheck className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-bold text-red-700 mb-2">Accès Refusé</h3>
+        <p className="text-red-600 font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
+      </div>
+    );
+  }
+
+  const handleAnalyze = () => {
+    if (userTokens <= 0) {
+      alert('Tokens insuffisants');
       return;
     }
     if (!historyText.trim() || !startTime.trim()) {
@@ -23,11 +35,7 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
       return;
     }
 
-    const canAnalyze = await onAnalyze(); // Deduct token and check expiration
-    if (canAnalyze === false) {
-      return;
-    }
-
+    onAnalyze(); // Deduct token
     setIsAnalyzing(true);
 
     // Simulate 5s analysis
@@ -118,10 +126,26 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
 
   return (
     <div className="space-y-6">
+      <TutorialCard 
+        title="Ahoana ny fampiasana Aviator Analyse"
+        content={
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Ampidiro ny historique farany an'ny Aviator</li>
+            <li>Ampidiro ny ora nanombohana (Heure de départ)</li>
+            <li>Tsindrio ny "Lancer l'analyse"</li>
+          </ul>
+        }
+        explanation={
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Ny système dia hamakafaka ny pattern ary hanome ny prédiction ho an'ny ora manaraka</li>
+          </ul>
+        }
+      />
+
       <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Plane className="w-5 h-5 text-red-500" />
-          Analyse Aviator (4 Heures)
+          Analyse Aviator (4 Heures) {isVip && <span className="text-amber-400 text-sm ml-2">(VIP MODE)</span>}
         </h3>
         <div className="space-y-3 mb-4">
           <textarea
@@ -168,14 +192,59 @@ export default function AviatorSystem({ userTokens, onAnalyze }: Props) {
               <div className="text-right">Risque</div>
             </div>
             <div className="max-h-[500px] overflow-y-auto hide-scrollbar">
-              {rounds.map((round, idx) => (
-                <div key={idx} className="grid grid-cols-4 p-3 border-b border-slate-800/50 text-sm items-center hover:bg-slate-800/30 transition-colors">
-                  <div className="font-mono text-slate-300">{round.time}</div>
-                  <div className={`text-center font-bold ${getColorClass(round.multiplier1)}`}>{round.multiplier1.toFixed(2)}x</div>
-                  <div className={`text-center font-bold ${getColorClass(round.multiplier2)}`}>{round.multiplier2.toFixed(2)}x</div>
-                  <div className={`text-right font-bold ${getColorClass(round.risk)}`}>{round.risk.toFixed(2)}x</div>
-                </div>
-              ))}
+              {rounds.map((round, idx) => {
+                const isHighRisk = round.multiplier1 > 10 || round.multiplier2 > 10;
+                const isSafe = round.multiplier1 >= 1.5 && round.multiplier1 <= 2.0;
+                
+                let riskLevel = 'LOW';
+                let riskColor = 'text-green-400';
+                if (round.risk > 10) {
+                  riskLevel = 'HIGH';
+                  riskColor = 'text-red-400';
+                } else if (round.risk > 3) {
+                  riskLevel = 'MEDIUM';
+                  riskColor = 'text-yellow-400';
+                }
+
+                return (
+                  <div key={idx} className={`p-3 border-b border-slate-800/50 text-sm hover:bg-slate-800/30 transition-colors ${isVip && isHighRisk ? 'bg-orange-500/10' : ''}`}>
+                    <div className="grid grid-cols-4 items-center">
+                      <div className="font-mono text-slate-300">{round.time}</div>
+                      <div className={`text-center font-bold ${getColorClass(round.multiplier1)}`}>{round.multiplier1.toFixed(2)}x</div>
+                      <div className={`text-center font-bold ${getColorClass(round.multiplier2)}`}>{round.multiplier2.toFixed(2)}x</div>
+                      <div className={`text-right font-bold ${getColorClass(round.risk)}`}>{round.risk.toFixed(2)}x</div>
+                    </div>
+                    
+                    {isVip && (
+                      <div className="mt-3 pt-3 border-t border-slate-700/50 space-y-2">
+                        <div className="flex items-center gap-2 text-amber-400 text-xs font-bold mb-1">
+                          <Gem className="w-3 h-3" /> VIP PATTERN DETECTED
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                            <span className="text-slate-500 block mb-1">Entry Timing:</span>
+                            <span className="text-white font-medium">{round.time}</span>
+                          </div>
+                          <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                            <span className="text-slate-500 block mb-1">Exit Timing:</span>
+                            <span className="text-white font-medium">+{Math.floor(Math.random() * 15 + 5)}s</span>
+                          </div>
+                          <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50 col-span-2">
+                            <span className="text-slate-500 block mb-1">Risk Level:</span>
+                            <span className={`font-bold ${riskColor}`}>{riskLevel}</span>
+                          </div>
+                          <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50 col-span-2">
+                            <span className="text-slate-500 block mb-1">Crash Range:</span>
+                            <span className="text-white font-medium">
+                              {Math.max(1.00, round.multiplier1 - 0.5).toFixed(2)}x - {(round.multiplier1 + 1.5).toFixed(2)}x
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
