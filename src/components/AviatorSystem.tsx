@@ -132,7 +132,7 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
     if (multiplier >= 2.00 && multiplier <= 4.99) return 'text-purple-500';
     if (multiplier >= 5.00 && multiplier <= 49.99) return 'text-red-500';
     if (multiplier >= 50) return 'text-green-500';
-    return 'text-slate-300';
+    return 'text-[#D1D5DB]';
   };
 
   return (
@@ -153,32 +153,32 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
         }
       />
 
-      <div className="bg-white rounded-xl p-4 border border-slate-200">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+      <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-4 border border-[#E5E7EB]">
+        <h3 className="text-lg font-bold text-[#111827] mb-4 flex items-center gap-2">
           <Plane className="w-5 h-5 text-red-500" />
-          Analyse Aviator (4 Heures) {isVip && <span className="text-amber-400 text-sm ml-2">(VIP MODE)</span>}
+          Analyse Aviator (4 Heures) {isVip && <span className="text-amber-500 text-sm ml-2">(VIP MODE)</span>}
         </h3>
         <div className="space-y-3 mb-4">
           <textarea
             value={historyText}
             onChange={(e) => setHistoryText(e.target.value)}
             placeholder="Collez les derniers tours (ex: 2.13, 1.45, 5.56...)"
-            className="w-full h-24 bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-red-500"
+            className="w-full h-24 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-red-500 transition-colors"
           />
           <input
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-red-500"
+            className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-red-500 transition-colors"
           />
         </div>
         <button 
           onClick={handleAnalyze}
           disabled={isAnalyzing || userTokens <= 0}
-          className={`w-full font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`w-full font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
             userTokens <= 0 
-              ? 'bg-red-500/20 text-red-400 border border-red-500/50' 
-              : 'bg-red-500 hover:bg-red-600 text-white'
+              ? 'bg-red-50 border border-red-200 text-red-500' 
+              : 'bg-red-500 hover:bg-red-600 text-white shadow-sm'
           }`}
         >
           {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens <= 0 ? null : <Search className="w-5 h-5" />}
@@ -189,64 +189,64 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
       {rounds.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-white">Prédictions Aviator</h3>
-            <button onClick={clearResults} className="text-slate-400 hover:text-slate-300 flex items-center gap-1 text-sm">
+            <h3 className="text-lg font-bold text-[#111827]">Prédictions Aviator</h3>
+            <button onClick={clearResults} className="text-[#6B7280] hover:text-[#111827] flex items-center gap-1 text-sm font-medium">
               <Trash2 className="w-4 h-4" /> Effacer
             </button>
           </div>
           
-          <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
-            <div className="grid grid-cols-4 bg-slate-800 p-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden border border-[#E5E7EB]">
+            <div className="grid grid-cols-4 bg-[#F9FAFB] p-3 text-xs font-bold text-[#6B7280] uppercase tracking-wider border-b border-[#E5E7EB]">
               <div>Heure</div>
               <div className="text-center">Cote 1</div>
               <div className="text-center">Cote 2</div>
               <div className="text-right">Risque</div>
             </div>
-            <div className="max-h-[500px] overflow-y-auto hide-scrollbar">
+            <div className="max-h-[500px] overflow-y-auto hide-scrollbar divide-y divide-[#E5E7EB]">
               {rounds.map((round, idx) => {
                 const isHighRisk = round.multiplier1 > 10 || round.multiplier2 > 10;
                 const isSafe = round.multiplier1 >= 1.5 && round.multiplier1 <= 2.0;
                 
                 let riskLevel = 'LOW';
-                let riskColor = 'text-green-400';
+                let riskColor = 'text-[#22C55E]';
                 if (round.risk > 10) {
                   riskLevel = 'HIGH';
-                  riskColor = 'text-red-400';
+                  riskColor = 'text-[#EF4444]';
                 } else if (round.risk > 3) {
                   riskLevel = 'MEDIUM';
-                  riskColor = 'text-yellow-400';
+                  riskColor = 'text-[#F59E0B]';
                 }
 
                 return (
-                  <div key={idx} className={`p-3 border-b border-slate-200/50 text-sm hover:bg-slate-800/30 transition-colors ${isVip && isHighRisk ? 'bg-orange-500/10' : ''}`}>
+                  <div key={idx} className={`p-3 text-sm hover:bg-[#F9FAFB] transition-colors ${isVip && isHighRisk ? 'bg-orange-50' : ''}`}>
                     <div className="grid grid-cols-4 items-center">
-                      <div className="font-mono text-slate-300">{round.time}</div>
+                      <div className="font-mono text-[#6B7280]">{round.time}</div>
                       <div className={`text-center font-bold ${getColorClass(round.multiplier1)}`}>{round.multiplier1.toFixed(2)}x</div>
                       <div className={`text-center font-bold ${getColorClass(round.multiplier2)}`}>{round.multiplier2.toFixed(2)}x</div>
                       <div className={`text-right font-bold ${getColorClass(round.risk)}`}>{round.risk.toFixed(2)}x</div>
                     </div>
                     
                     {isVip && (
-                      <div className="mt-3 pt-3 border-t border-slate-200/50 space-y-2">
-                        <div className="flex items-center gap-2 text-amber-400 text-xs font-bold mb-1">
+                      <div className="mt-3 pt-3 border-t border-[#E5E7EB] space-y-2">
+                        <div className="flex items-center gap-2 text-amber-500 text-xs font-bold mb-1">
                           <Gem className="w-3 h-3" /> VIP PATTERN DETECTED
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="bg-slate-800/50 p-2 rounded border border-slate-200/50">
-                            <span className="text-slate-500 block mb-1">Entry Timing:</span>
-                            <span className="text-white font-medium">{round.time}</span>
+                          <div className="bg-[#F9FAFB] p-2 rounded-lg border border-[#E5E7EB]">
+                            <span className="text-[#6B7280] block mb-1">Entry Timing:</span>
+                            <span className="text-[#111827] font-medium">{round.time}</span>
                           </div>
-                          <div className="bg-slate-800/50 p-2 rounded border border-slate-200/50">
-                            <span className="text-slate-500 block mb-1">Exit Timing:</span>
-                            <span className="text-white font-medium">+{Math.floor(Math.random() * 15 + 5)}s</span>
+                          <div className="bg-[#F9FAFB] p-2 rounded-lg border border-[#E5E7EB]">
+                            <span className="text-[#6B7280] block mb-1">Exit Timing:</span>
+                            <span className="text-[#111827] font-medium">+{Math.floor(Math.random() * 15 + 5)}s</span>
                           </div>
-                          <div className="bg-slate-800/50 p-2 rounded border border-slate-200/50 col-span-2">
-                            <span className="text-slate-500 block mb-1">Risk Level:</span>
+                          <div className="bg-[#F9FAFB] p-2 rounded-lg border border-[#E5E7EB] col-span-2">
+                            <span className="text-[#6B7280] block mb-1">Risk Level:</span>
                             <span className={`font-bold ${riskColor}`}>{riskLevel}</span>
                           </div>
-                          <div className="bg-slate-800/50 p-2 rounded border border-slate-200/50 col-span-2">
-                            <span className="text-slate-500 block mb-1">Crash Range:</span>
-                            <span className="text-white font-medium">
+                          <div className="bg-[#F9FAFB] p-2 rounded-lg border border-[#E5E7EB] col-span-2">
+                            <span className="text-[#6B7280] block mb-1">Crash Range:</span>
+                            <span className="text-[#111827] font-medium">
                               {Math.max(1.00, round.multiplier1 - 0.5).toFixed(2)}x - {(round.multiplier1 + 1.5).toFixed(2)}x
                             </span>
                           </div>

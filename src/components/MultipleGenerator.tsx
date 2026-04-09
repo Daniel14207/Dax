@@ -177,19 +177,19 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
         }
       />
 
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-2">Générateur de Multiples</h3>
-        <p className="text-sm text-slate-600 mb-4">Insérez vos matchs au format :<br/><code>Equipe A vs Equipe B 1.50 3.20 4.10</code></p>
+      <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-4 border border-[#E5E7EB] shadow-sm">
+        <h3 className="text-lg font-bold text-[#111827] mb-2">Générateur de Multiples</h3>
+        <p className="text-sm text-[#6B7280] mb-4">Insérez vos matchs au format :<br/><code>Equipe A vs Equipe B 1.50 3.20 4.10</code></p>
         
         <textarea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Mozambique vs Zambia 4.38 2.15 2.72&#10;Burkina Faso vs South Africa 2.20 3.69 2.98&#10;Morocco vs Botswana 1.22 5.06 23.18"
-          className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-900 text-sm focus:outline-none focus:border-[#eab308] mb-4 font-mono"
+          className="w-full h-32 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] text-sm focus:outline-none focus:border-[#FACC15] mb-4 font-mono transition-colors"
         />
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex items-start gap-2">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-start gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <p className="text-sm text-red-600">{error}</p>
           </div>
@@ -198,7 +198,7 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
         <button 
           onClick={generateTickets}
           disabled={isGenerating}
-          className="w-full bg-[#eab308] hover:bg-[#ca8a04] disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+          className="w-full bg-[#FACC15] hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed text-[#111827] font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2"
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
           {isGenerating ? 'Analyse en cours...' : 'Générer (500 Tokens)'}
@@ -206,47 +206,42 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
       </div>
 
       {tickets.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h4 className="font-bold text-slate-900 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-[#2dd4bf]" />
+            <h4 className="font-bold text-[#111827] flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-[#22C55E]" />
               Tickets Générés ({tickets.length})
             </h4>
             <button 
               onClick={copyAllToClipboard}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-lg flex items-center gap-2 transition-colors"
+              className="px-4 py-2 bg-[#E5E7EB] hover:bg-gray-300 text-[#111827] text-sm font-bold rounded-xl active:scale-95 transition-transform flex items-center gap-2"
             >
               <Copy className="w-4 h-4" /> COPY ALL
             </button>
           </div>
           
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-6">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-                  <span className="font-bold text-slate-900">MULTIPLE {ticket.id}</span>
+              <div key={ticket.id} className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-[#E5E7EB] overflow-hidden">
+                <div className="bg-[#F9FAFB] px-4 py-3 border-b border-[#E5E7EB] flex justify-between items-center">
+                  <span className="font-bold text-[#111827]">MULTIPLE {ticket.id}</span>
                 </div>
                 
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-[#E5E7EB]">
                   {ticket.matches.map((match, idx) => (
-                    <div key={idx} className="p-4 hover:bg-slate-50 transition-colors">
-                      <div className="font-medium text-slate-900 mb-2">{match.home} <span className="text-slate-400 mx-1">vs</span> {match.away}</div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-500 text-sm">Pick:</span>
-                          <span className="font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded border border-slate-200">{match.pick}</span>
-                        </div>
-                      </div>
+                    <div key={idx} className="p-4 hover:bg-[#F9FAFB] transition-colors flex justify-between items-center">
+                      <div className="font-medium text-[#111827]">{match.home} <span className="text-[#9CA3AF] mx-1">vs</span> {match.away}</div>
+                      <span className="font-bold text-[#111827] bg-[#FACC15] px-3 py-1 rounded-lg shadow-sm">{match.pick}</span>
                     </div>
                   ))}
                 </div>
                 
-                <div className="p-3 bg-slate-50 border-t border-slate-200">
+                <div className="p-3 bg-[#F9FAFB] border-t border-[#E5E7EB]">
                   <button 
                     onClick={() => copyToClipboard(ticket)}
-                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    className="w-full py-2.5 bg-[#E5E7EB] hover:bg-gray-300 text-[#111827] text-sm font-bold rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2"
                   >
-                    <CheckCircle className="w-4 h-4" /> Copier le code
+                    <Copy className="w-4 h-4" /> Copier le code
                   </button>
                 </div>
               </div>

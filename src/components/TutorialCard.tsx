@@ -11,7 +11,7 @@ export function TutorialCard({ title, content, explanation }: TutorialCardProps)
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden mb-4">
+    <div className="bg-blue-50 border border-blue-200 rounded-xl active:scale-95 transition-transform overflow-hidden mb-4">
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-3 bg-blue-100 text-blue-900 font-bold text-sm"
