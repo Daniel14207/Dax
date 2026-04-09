@@ -38,12 +38,12 @@ export function ResultHistory() {
       </div>
 
       {results.map((result, index) => (
-        <div key={index} className="bg-[#1e293b] rounded-xl overflow-hidden border border-slate-800 shadow-lg relative">
+        <div key={index} className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-lg relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
           
           {/* Header */}
-          <div className="bg-slate-800/50 px-4 py-2.5 flex justify-between items-center border-b border-slate-700/50">
-            <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-1 rounded-md border border-slate-700/50">
+          <div className="bg-slate-800/50 px-4 py-2.5 flex justify-between items-center border-b border-slate-200/50">
+            <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-1 rounded-md border border-slate-200/50">
               <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{result.leagueId || 'COMPETITION'}</span>
             </div>
             <div className="text-[10px] text-slate-500 font-bold">{new Date(result.timestamp || Date.now()).toLocaleString('fr-FR')}</div>
@@ -63,15 +63,15 @@ export function ResultHistory() {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cotes (Extraites)</span>
             </div>
             <div className="flex gap-2">
-              <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-700/50">
+              <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-200/50">
                 <span className="text-[10px] text-slate-500 font-bold">1</span>
                 <span className="text-xs font-bold text-white">{result.extractedOdds?.home?.toFixed(2) || '-'}</span>
               </div>
-              <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-700/50">
+              <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-200/50">
                 <span className="text-[10px] text-slate-500 font-bold">X</span>
                 <span className="text-xs font-bold text-white">{result.extractedOdds?.draw?.toFixed(2) || '-'}</span>
               </div>
-              <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-700/50">
+              <div className="flex-1 bg-slate-900/50 rounded-lg p-2 flex justify-between items-center border border-slate-200/50">
                 <span className="text-[10px] text-slate-500 font-bold">2</span>
                 <span className="text-xs font-bold text-white">{result.extractedOdds?.away?.toFixed(2) || '-'}</span>
               </div>
@@ -79,7 +79,7 @@ export function ResultHistory() {
           </div>
 
           {/* Prediction & Details */}
-          <div className="bg-slate-800/30 p-4 border-t border-slate-700/50">
+          <div className="bg-slate-800/30 p-4 border-t border-slate-200/50">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -107,15 +107,15 @@ export function ResultHistory() {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Détails</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-700/30 flex justify-between items-center">
+                <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-200/30 flex justify-between items-center">
                   <span className="text-[10px] text-slate-500">Double Chance</span>
                   <span className="text-[11px] font-bold text-slate-300">{result.results?.dc || '-'}</span>
                 </div>
-                <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-700/30 flex justify-between items-center">
+                <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-200/30 flex justify-between items-center">
                   <span className="text-[10px] text-slate-500">O/U 2.5</span>
                   <span className="text-[11px] font-bold text-slate-300">{result.results?.ou25 || '-'}</span>
                 </div>
-                <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-700/30 flex justify-between items-center col-span-2">
+                <div className="bg-slate-900/50 px-2.5 py-1.5 rounded-md border border-slate-200/30 flex justify-between items-center col-span-2">
                   <span className="text-[10px] text-slate-500">GG/NG</span>
                   <span className="text-[11px] font-bold text-slate-300">{result.results?.ggng || '-'}</span>
                 </div>

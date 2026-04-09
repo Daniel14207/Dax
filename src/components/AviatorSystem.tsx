@@ -153,7 +153,7 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
         }
       />
 
-      <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
+      <div className="bg-white rounded-xl p-4 border border-slate-200">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Plane className="w-5 h-5 text-red-500" />
           Analyse Aviator (4 Heures) {isVip && <span className="text-amber-400 text-sm ml-2">(VIP MODE)</span>}
@@ -163,13 +163,13 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
             value={historyText}
             onChange={(e) => setHistoryText(e.target.value)}
             placeholder="Collez les derniers tours (ex: 2.13, 1.45, 5.56...)"
-            className="w-full h-24 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-red-500"
+            className="w-full h-24 bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-red-500"
           />
           <input
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-red-500"
+            className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-red-500"
           />
         </div>
         <button 
@@ -195,7 +195,7 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
             </button>
           </div>
           
-          <div className="bg-[#1e293b] rounded-xl overflow-hidden border border-slate-800">
+          <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
             <div className="grid grid-cols-4 bg-slate-800 p-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
               <div>Heure</div>
               <div className="text-center">Cote 1</div>
@@ -218,7 +218,7 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
                 }
 
                 return (
-                  <div key={idx} className={`p-3 border-b border-slate-800/50 text-sm hover:bg-slate-800/30 transition-colors ${isVip && isHighRisk ? 'bg-orange-500/10' : ''}`}>
+                  <div key={idx} className={`p-3 border-b border-slate-200/50 text-sm hover:bg-slate-800/30 transition-colors ${isVip && isHighRisk ? 'bg-orange-500/10' : ''}`}>
                     <div className="grid grid-cols-4 items-center">
                       <div className="font-mono text-slate-300">{round.time}</div>
                       <div className={`text-center font-bold ${getColorClass(round.multiplier1)}`}>{round.multiplier1.toFixed(2)}x</div>
@@ -227,24 +227,24 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
                     </div>
                     
                     {isVip && (
-                      <div className="mt-3 pt-3 border-t border-slate-700/50 space-y-2">
+                      <div className="mt-3 pt-3 border-t border-slate-200/50 space-y-2">
                         <div className="flex items-center gap-2 text-amber-400 text-xs font-bold mb-1">
                           <Gem className="w-3 h-3" /> VIP PATTERN DETECTED
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                          <div className="bg-slate-800/50 p-2 rounded border border-slate-200/50">
                             <span className="text-slate-500 block mb-1">Entry Timing:</span>
                             <span className="text-white font-medium">{round.time}</span>
                           </div>
-                          <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                          <div className="bg-slate-800/50 p-2 rounded border border-slate-200/50">
                             <span className="text-slate-500 block mb-1">Exit Timing:</span>
                             <span className="text-white font-medium">+{Math.floor(Math.random() * 15 + 5)}s</span>
                           </div>
-                          <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50 col-span-2">
+                          <div className="bg-slate-800/50 p-2 rounded border border-slate-200/50 col-span-2">
                             <span className="text-slate-500 block mb-1">Risk Level:</span>
                             <span className={`font-bold ${riskColor}`}>{riskLevel}</span>
                           </div>
-                          <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50 col-span-2">
+                          <div className="bg-slate-800/50 p-2 rounded border border-slate-200/50 col-span-2">
                             <span className="text-slate-500 block mb-1">Crash Range:</span>
                             <span className="text-white font-medium">
                               {Math.max(1.00, round.multiplier1 - 0.5).toFixed(2)}x - {(round.multiplier1 + 1.5).toFixed(2)}x

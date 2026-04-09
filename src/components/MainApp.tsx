@@ -294,8 +294,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     const pastResults: any[] = [];
     for (let i = 1; i <= 50; i++) {
       const slotCycle = virtualTime.cycleIndex - i;
-      const slotRealTimeStart = slotCycle * 90000;
-      const slotMatchTime = new Date(slotRealTimeStart + 2 * 60000);
+      const slotRealTimeStart = slotCycle * 120000;
+      const slotMatchTime = new Date(slotRealTimeStart);
       
       const slotH = slotMatchTime.getHours();
       const slotM = slotMatchTime.getMinutes();
@@ -443,7 +443,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
           <h1 className="text-lg font-bold text-white">Betting Tips</h1>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
+          <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-200">
             <Coins className="w-3.5 h-3.5 text-[#eab308]" />
             <span className="font-bold text-white text-sm">{user.tokens}</span>
           </div>
@@ -464,8 +464,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       {showMenu && (
         <div className="fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMenu(false)}></div>
-          <div className="relative w-72 bg-[#1e293b] h-full flex flex-col shadow-2xl transform transition-transform">
-            <div className="p-6 bg-slate-800 border-b border-slate-700 relative">
+          <div className="relative w-72 bg-white h-full flex flex-col shadow-2xl transform transition-transform">
+            <div className="p-6 bg-slate-800 border-b border-slate-200 relative">
               <button onClick={() => setShowMenu(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -484,13 +484,13 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 <Plane className="w-5 h-5" />
                 <span className="font-medium">Aviator</span>
               </button>
-              <div className="my-4 border-t border-slate-700"></div>
+              <div className="my-4 border-t border-slate-200"></div>
               <button onClick={() => setShowAdminModal(true)} className="w-full flex items-center gap-3 px-4 py-3 text-amber-400 hover:bg-amber-400/10 rounded-lg transition-colors">
                 <ShieldAlert className="w-5 h-5" />
                 <span className="font-medium">Admin Panel</span>
               </button>
             </div>
-            <div className="p-4 border-t border-slate-700">
+            <div className="p-4 border-t border-slate-200">
               <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-medium">
                 <LogOut className="w-5 h-5" />
                 <span>Déconnexion</span>
@@ -503,7 +503,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       {/* Admin Modal */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1e293b] rounded-xl p-6 w-full max-w-sm border border-slate-700">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm border border-slate-200">
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <ShieldAlert className="w-6 h-6 text-amber-500" />
               Accès Administrateur
@@ -515,7 +515,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                   type="password"
                   value={adminCode}
                   onChange={(e) => setAdminCode(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-800 border border-slate-200 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-amber-500"
                   placeholder="••••"
                   autoFocus
                 />
@@ -544,8 +544,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       {showCart && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCart(false)}></div>
-          <div className="relative bg-[#1e293b] w-full max-w-md rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
-            <div className="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center">
+          <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="bg-slate-800 p-4 border-b border-slate-200 flex justify-between items-center">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <ShoppingCart className="w-6 h-6 text-[#eab308]" />
                 Acheter des Tokens
@@ -555,14 +555,14 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center justify-between hover:border-[#eab308] transition-colors cursor-pointer" onClick={() => handleBuyTokens(5000, '3.5 jours')}>
+              <div className="bg-slate-800/50 border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:border-[#eab308] transition-colors cursor-pointer" onClick={() => handleBuyTokens(5000, '3.5 jours')}>
                 <div>
                   <div className="font-bold text-white text-lg">5 000 Ar</div>
                   <div className="text-sm text-slate-400">Validité: 3.5 jours</div>
                 </div>
                 <button className="bg-[#eab308] text-slate-900 font-bold px-4 py-2 rounded-lg">Acheter</button>
               </div>
-              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center justify-between hover:border-[#eab308] transition-colors cursor-pointer" onClick={() => handleBuyTokens(10000, '7 jours')}>
+              <div className="bg-slate-800/50 border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:border-[#eab308] transition-colors cursor-pointer" onClick={() => handleBuyTokens(10000, '7 jours')}>
                 <div>
                   <div className="font-bold text-white text-lg">10 000 Ar</div>
                   <div className="text-sm text-slate-400">Validité: 7 jours</div>
@@ -736,7 +736,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="bg-black border-t border-slate-800 fixed bottom-0 w-full flex justify-around px-2 py-2 pb-safe z-20">
+      <nav className="bg-black border-t border-slate-200 fixed bottom-0 w-full flex justify-around px-2 py-2 pb-safe z-20">
         <button onClick={() => setMainTab('virtuel')} className={`flex flex-col items-center p-2 min-w-[60px] ${mainTab === 'virtuel' ? 'text-[#eab308]' : 'text-slate-500'}`}>
           <Flame className="w-5 h-5 mb-1" />
           <span className="text-[10px] font-bold uppercase tracking-wider">Virtuel</span>

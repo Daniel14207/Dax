@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, RefreshCw, CheckCircle, AlertCircle, Copy } from 'lucide-react';
 import { TutorialCard } from './TutorialCard';
 
 interface ParsedMatch {
@@ -87,8 +87,8 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
 
     try {
       const parsedMatches = parseMatches(inputText);
-      if (parsedMatches.length < 3) {
-        setError("Veuillez insérer au moins 3 matchs valides au format: Equipe A vs Equipe B 1.50 3.20 4.10");
+      if (parsedMatches.length < 2) {
+        setError("Veuillez insérer au moins 2 matchs valides au format: Equipe A vs Equipe B 1.50 3.20 4.10");
         return;
       }
 
@@ -102,13 +102,13 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
         onAnalyze(500);
       }
 
-      const numTickets = 20; // EXACTLY 20 TICKETS
+      const numTickets = 10; // EXACTLY 10 TICKETS
       const newTickets: Ticket[] = [];
 
       for (let i = 0; i < numTickets; i++) {
         // Shuffle parsed matches
         const shuffled = [...parsedMatches].sort(() => 0.5 - Math.random());
-        const selectedMatches = shuffled.slice(0, 3); // EXACTLY 3 MATCHES
+        const selectedMatches = shuffled.slice(0, 2); // EXACTLY 2 MATCHES
         
         const ticketMatches: TicketMatch[] = [];
         let totalOdd = 1;
@@ -125,7 +125,7 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
         }
 
         newTickets.push({
-          id: Math.random().toString(36).substring(2, 8).toUpperCase(),
+          id: (i + 1).toString(),
           matches: ticketMatches,
           totalOdd: Number(totalOdd.toFixed(2))
         });
@@ -141,12 +141,21 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
   };
 
   const copyToClipboard = (ticket: Ticket) => {
-    const text = `Ticket #${ticket.id}\n\n` + 
-      ticket.matches.map((m, i) => `Match ${i + 1}:\n${m.home} vs ${m.away}\n→ Pick: ${m.pick}\n→ Odd: ${m.odd.toFixed(2)}`).join('\n\n') +
-      `\n\n💰 Total Odds: ${ticket.totalOdd.toFixed(2)}`;
+    const text = `MULTIPLE ${ticket.id}\n` + 
+      ticket.matches.map(m => `${m.home} vs ${m.away} → ${m.pick}`).join('\n');
     
     navigator.clipboard.writeText(text);
     alert('Ticket copié !');
+  };
+
+  const copyAllToClipboard = () => {
+    const text = tickets.map((ticket) => {
+      return `MULTIPLE ${ticket.id}\n` + 
+        ticket.matches.map(m => `${m.home} vs ${m.away} → ${m.pick}`).join('\n');
+    }).join('\n\n');
+    
+    navigator.clipboard.writeText(text);
+    alert('Tous les tickets copiés !');
   };
 
   return (
@@ -198,35 +207,34 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
 
       {tickets.length > 0 && (
         <div className="space-y-4">
-          <h4 className="font-bold text-slate-900 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-[#2dd4bf]" />
-            Tickets Générés ({tickets.length})
-          </h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-bold text-slate-900 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-[#2dd4bf]" />
+              Tickets Générés ({tickets.length})
+            </h4>
+            <button 
+              onClick={copyAllToClipboard}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Copy className="w-4 h-4" /> COPY ALL
+            </button>
+          </div>
           
           <div className="grid grid-cols-1 gap-4">
             {tickets.map((ticket) => (
               <div key={ticket.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                 <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-                  <span className="font-bold text-slate-900">Ticket #{ticket.id}</span>
-                  <div className="bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-                    <span className="text-slate-500 text-xs mr-1">Cote Totale:</span>
-                    <span className="text-[#eab308] font-bold">{ticket.totalOdd.toFixed(2)}</span>
-                  </div>
+                  <span className="font-bold text-slate-900">MULTIPLE {ticket.id}</span>
                 </div>
                 
                 <div className="divide-y divide-slate-100">
                   {ticket.matches.map((match, idx) => (
                     <div key={idx} className="p-4 hover:bg-slate-50 transition-colors">
-                      <div className="text-xs text-slate-500 font-bold mb-1 uppercase tracking-wider">Match {idx + 1}</div>
                       <div className="font-medium text-slate-900 mb-2">{match.home} <span className="text-slate-400 mx-1">vs</span> {match.away}</div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <span className="text-slate-500 text-sm">Pick:</span>
                           <span className="font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded border border-slate-200">{match.pick}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-500 text-sm">Odd:</span>
-                          <span className="font-bold text-[#eab308]">{match.odd.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

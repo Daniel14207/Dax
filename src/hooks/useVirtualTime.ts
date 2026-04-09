@@ -17,11 +17,11 @@ export function useVirtualTime() {
       const now = new Date();
       const liveTime = new Date(now.getTime() + 2 * 60000); // device_time + 2 minutes
       
-      const CYCLE_DURATION = 90000; // 90 seconds
+      const CYCLE_DURATION = 120000; // 2 minutes
       const RESULT_DELAY = 30000; // 30 seconds
       
-      const cycleIndex = Math.floor(now.getTime() / CYCLE_DURATION);
-      const msInCycle = now.getTime() % CYCLE_DURATION;
+      const cycleIndex = Math.floor(liveTime.getTime() / CYCLE_DURATION);
+      const msInCycle = liveTime.getTime() % CYCLE_DURATION;
       
       const showResult = msInCycle >= RESULT_DELAY;
       
@@ -30,7 +30,7 @@ export function useVirtualTime() {
       for (let i = -20; i <= 10; i++) {
         const slotCycle = cycleIndex + i;
         const slotRealTimeStart = slotCycle * CYCLE_DURATION;
-        const slotMatchTime = new Date(slotRealTimeStart + 2 * 60000);
+        const slotMatchTime = new Date(slotRealTimeStart);
         
         const slotH = slotMatchTime.getHours();
         const slotM = slotMatchTime.getMinutes();

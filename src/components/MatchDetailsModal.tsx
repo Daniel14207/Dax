@@ -12,130 +12,57 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
 
   const { league, homeTeam, awayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed } = match;
 
-  // Generate deterministic odds for other markets based on scoreSeed
-  const genOdd = (base: number, variance: number, seedOffset: number) => {
-    const pseudoRandom = ((scoreSeed + seedOffset) * 9301 + 49297) % 233280 / 233280;
-    return (base + pseudoRandom * variance).toFixed(2);
+  const genResult = () => {
+    const pseudoRandom = ((scoreSeed) * 9301 + 49297) % 233280 / 233280;
+    
+    // Use odds to determine favorite
+    const { home, draw, away } = odds;
+    let ft1x2 = 'X';
+    if (home < away && home < draw) ft1x2 = '1';
+    else if (away < home && away < draw) ft1x2 = '2';
+    
+    let ht1x2 = ft1x2 === 'X' ? 'X' : (pseudoRandom > 0.5 ? ft1x2 : 'X');
+    let dc = ft1x2 === '1' ? '1X' : (ft1x2 === '2' ? 'X2' : '1X');
+    let dcHt = ht1x2 === '1' ? '1X' : (ht1x2 === '2' ? 'X2' : '1X');
+    
+    let exactScore = `${homeScore}-${awayScore}`;
+    let htHomeScore = Math.floor(homeScore / 2) + (pseudoRandom > 0.7 ? 1 : 0);
+    let htAwayScore = Math.floor(awayScore / 2) + (pseudoRandom < 0.3 ? 1 : 0);
+    if (htHomeScore > homeScore) htHomeScore = homeScore;
+    if (htAwayScore > awayScore) htAwayScore = awayScore;
+    let htScore = `${htHomeScore}-${htAwayScore}`;
+    
+    const totalGoals = homeScore + awayScore;
+    const ou05 = totalGoals > 0 ? '✔' : '✖';
+    const ou15 = totalGoals > 1 ? '✔' : '✖';
+    const ou25 = totalGoals > 2 ? '✔' : '✖';
+    const ou35 = totalGoals > 3 ? '✔' : '✖';
+    
+    const ggng = (homeScore > 0 && awayScore > 0) ? 'GG' : 'NG';
+    const htft = `${ht1x2}/${ft1x2}`;
+    const oddEven = totalGoals % 2 === 0 ? 'Pair' : 'Impair';
+    const firstGoalMin = totalGoals > 0 ? Math.floor(pseudoRandom * 45 + 1) + '’' : 'Pas de but';
+    
+    const homeOu15 = homeScore > 1 ? '✔' : '✖';
+    const homeOu25 = homeScore > 2 ? '✔' : '✖';
+    const awayOu05 = awayScore > 0 ? '✔' : '✖';
+    const awayOu15 = awayScore > 1 ? '✔' : '✖';
+
+    return {
+      ht1x2, dc, dcHt, exactScore, htScore,
+      ou05, ou15, ou25, ou35,
+      ggng, totalGoals, htft, oddEven, firstGoalMin,
+      homeOu15, homeOu25, awayOu05, awayOu15
+    };
   };
 
-  const markets = [
-    {
-      title: "1X2 (Temps Réglementaire)",
-      options: [
-        { label: "1", odd: odds.home.toFixed(2) },
-        { label: "X", odd: odds.draw.toFixed(2) },
-        { label: "2", odd: odds.away.toFixed(2) }
-      ]
-    },
-    {
-      title: "Mi-temps 1X2 (HT 1X2)",
-      options: [
-        { label: "1", odd: genOdd(2.1, 1.5, 8) },
-        { label: "X", odd: genOdd(1.9, 0.6, 9) },
-        { label: "2", odd: genOdd(2.5, 1.8, 10) }
-      ]
-    },
-    {
-      title: "Double Chance (DC)",
-      options: [
-        { label: "1X", odd: genOdd(1.1, 0.5, 1) },
-        { label: "12", odd: genOdd(1.2, 0.3, 2) },
-        { label: "X2", odd: genOdd(1.1, 0.5, 3) }
-      ]
-    },
-    {
-      title: "Double Chance Mi-temps (HT DC)",
-      options: [
-        { label: "1X", odd: genOdd(1.05, 0.4, 21) },
-        { label: "12", odd: genOdd(1.3, 0.4, 22) },
-        { label: "X2", odd: genOdd(1.15, 0.4, 23) }
-      ]
-    },
-    {
-      title: "Score Exact (CS)",
-      options: [
-        { label: "1-0", odd: genOdd(6.0, 3.0, 15) },
-        { label: "0-0", odd: genOdd(8.0, 4.0, 16) },
-        { label: "0-1", odd: genOdd(7.0, 3.5, 17) },
-        { label: "2-0", odd: genOdd(8.5, 4.0, 18) },
-        { label: "1-1", odd: genOdd(5.5, 2.0, 19) },
-        { label: "0-2", odd: genOdd(9.5, 5.0, 20) }
-      ]
-    },
-    {
-      title: "Plus/Moins (O/U)",
-      options: [
-        { label: "O 1.5", odd: genOdd(1.2, 0.4, 11) },
-        { label: "U 1.5", odd: genOdd(2.8, 1.5, 12) },
-        { label: "O 2.5", odd: genOdd(1.6, 1.2, 4) },
-        { label: "U 2.5", odd: genOdd(1.5, 1.1, 5) }
-      ]
-    },
-    {
-      title: "Les deux marquent (GG/NG)",
-      options: [
-        { label: "Oui (GG)", odd: genOdd(1.7, 0.8, 6) },
-        { label: "Non (NG)", odd: genOdd(1.8, 0.9, 7) }
-      ]
-    },
-    {
-      title: "Mi-temps / Fin (HT/FT)",
-      options: [
-        { label: "1/1", odd: genOdd(2.5, 1.5, 24) },
-        { label: "X/1", odd: genOdd(4.5, 2.0, 25) },
-        { label: "2/2", odd: genOdd(3.5, 2.0, 26) },
-        { label: "X/X", odd: genOdd(4.0, 1.5, 27) }
-      ]
-    },
-    {
-      title: "Total Buts Équipe (Team Totals)",
-      options: [
-        { label: "Home O 1.5", odd: genOdd(1.8, 1.0, 28) },
-        { label: "Home U 1.5", odd: genOdd(1.6, 0.8, 29) },
-        { label: "Away O 1.5", odd: genOdd(2.2, 1.2, 30) },
-        { label: "Away U 1.5", odd: genOdd(1.4, 0.6, 31) }
-      ]
-    },
-    {
-      title: "Pair / Impair (Odd/Even)",
-      options: [
-        { label: "Pair", odd: genOdd(1.85, 0.1, 13) },
-        { label: "Impair", odd: genOdd(1.85, 0.1, 14) }
-      ]
-    },
-    {
-      title: "Minute 1er But (First Goal Min)",
-      options: [
-        { label: "1-15", odd: genOdd(2.8, 1.0, 32) },
-        { label: "16-30", odd: genOdd(3.5, 1.0, 33) },
-        { label: "31-45", odd: genOdd(4.5, 1.5, 34) },
-        { label: "Pas de but", odd: genOdd(8.0, 4.0, 16) }
-      ]
-    },
-    {
-      title: "Multi-buts (Multi-goals)",
-      options: [
-        { label: "1-2", odd: genOdd(1.9, 0.5, 35) },
-        { label: "1-3", odd: genOdd(1.4, 0.3, 36) },
-        { label: "2-3", odd: genOdd(1.9, 0.4, 37) },
-        { label: "2-4", odd: genOdd(1.5, 0.3, 38) }
-      ]
-    },
-    {
-      title: "1ère Équipe à Marquer (FTTS)",
-      options: [
-        { label: "Home", odd: genOdd(1.6, 0.6, 39) },
-        { label: "Away", odd: genOdd(2.1, 0.8, 40) },
-        { label: "Aucun", odd: genOdd(8.0, 4.0, 16) }
-      ]
-    }
-  ];
+  const res = genResult();
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60] overflow-y-auto">
-      <div className="bg-[#1e293b] rounded-xl w-full max-w-2xl border border-slate-700 my-8 flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-xl w-full max-w-2xl border border-slate-200 my-8 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-3 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 sticky top-0 z-10 rounded-t-xl">
+        <div className="p-3 border-b border-slate-200 flex justify-between items-center bg-slate-800/80 sticky top-0 z-10 rounded-t-xl">
           <div className="flex items-center gap-2">
             <img src={league.logo} alt={league.name} className="w-5 h-5 object-contain" />
             <h3 className="font-bold text-white text-sm">{league.name}</h3>
@@ -146,15 +73,15 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
         </div>
 
         {/* Match Info */}
-        <div className="p-4 bg-slate-800/50 border-b border-slate-700">
+        <div className="p-4 bg-slate-800/50 border-b border-slate-200">
           <div className="flex justify-between items-center mb-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium bg-slate-800 px-2 py-1 rounded-full text-slate-300 border border-slate-700">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium bg-slate-800 px-2 py-1 rounded-full text-slate-300 border border-slate-200">
               <Clock className="w-3.5 h-3.5 text-[#eab308]" />
               <span>{slot.time}</span>
             </div>
             {slot.isPast && <span className="text-[11px] font-bold text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded-full border border-red-500/20">Résultat Final</span>}
             {isLive && <span className="text-[11px] font-bold text-[#2dd4bf] uppercase bg-[#2dd4bf]/10 px-2 py-1 rounded-full border border-[#2dd4bf]/20 animate-pulse">Match en cours</span>}
-            {isFuture && <span className="text-[11px] font-bold text-slate-400 uppercase bg-slate-800 px-2 py-1 rounded-full border border-slate-700">Prédiction</span>}
+            {isFuture && <span className="text-[11px] font-bold text-slate-400 uppercase bg-slate-800 px-2 py-1 rounded-full border border-slate-200">Prédiction</span>}
           </div>
 
           <div className="flex justify-between items-center">
@@ -165,11 +92,11 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
             
             <div className="px-4 flex flex-col items-center justify-center">
               {isResult ? (
-                <div className="text-2xl font-black text-white tracking-widest bg-slate-800 px-4 py-2 rounded-xl border-2 border-slate-700 shadow-inner">
+                <div className="text-2xl font-black text-white tracking-widest bg-slate-800 px-4 py-2 rounded-xl border-2 border-slate-200 shadow-inner">
                   {homeScore} - {awayScore}
                 </div>
               ) : (
-                <div className="text-slate-500 font-black text-xl bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">VS</div>
+                <div className="text-slate-500 font-black text-xl bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200">VS</div>
               )}
             </div>
             
@@ -180,23 +107,45 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
           </div>
         </div>
 
-        {/* Betting Markets */}
-        <div className="p-3 overflow-y-auto flex-1 space-y-3">
-          {markets.map((market, idx) => (
-            <div key={idx} className="bg-slate-800/30 rounded-lg border border-slate-700/50 overflow-hidden">
-              <div className="bg-slate-800/80 px-3 py-1.5 border-b border-slate-700/50">
-                <h4 className="font-semibold text-slate-300 text-[11px] uppercase tracking-wider">{market.title}</h4>
-              </div>
-              <div className={`grid gap-px bg-slate-700/50 ${market.options.length > 3 ? (market.options.length % 3 === 0 ? 'grid-cols-3' : 'grid-cols-2') : `grid-cols-${market.options.length}`}`}>
-                {market.options.map((opt, oIdx) => (
-                  <div key={oIdx} className="bg-[#1e293b] p-2 flex justify-between items-center hover:bg-slate-800 transition-colors cursor-pointer group">
-                    <span className="text-[11px] text-slate-400 group-hover:text-slate-300">{opt.label}</span>
-                    <span className="font-bold text-[#eab308] text-[12px]">{opt.odd}</span>
-                  </div>
-                ))}
-              </div>
+        {/* Betting Markets -> Replaced with Exact Format */}
+        <div className="p-4 overflow-y-auto flex-1 bg-slate-50">
+          <div className="space-y-4 text-sm font-medium text-slate-700">
+            <div>
+              Mi-temps 1X2: {res.ht1x2}<br/>
+              👉 Double Chance: {res.dc}<br/>
+              👉 Mi-temps DC: {res.dcHt}<br/>
+              👉 Score exact: {res.exactScore}<br/>
+              👉 Mi-temps Score: {res.htScore}
             </div>
-          ))}
+
+            <div>
+              👉 Over/Under:<br/>
+              +0.5 {res.ou05}<br/>
+              +1.5 {res.ou15}<br/>
+              +2.5 {res.ou25}<br/>
+              +3.5 {res.ou35}
+            </div>
+
+            <div>
+              👉 GG/NG: {res.ggng}<br/>
+              👉 Total buts: {res.totalGoals}<br/>
+              👉 HT/FT: {res.htft}<br/>
+              👉 Pair/Impair: {res.oddEven}<br/>
+              👉 First goal: {res.firstGoalMin}
+            </div>
+
+            <div>
+              👉 Team domicile:<br/>
+              +1.5 {res.homeOu15}<br/>
+              +2.5 {res.homeOu25}
+            </div>
+
+            <div>
+              👉 Team extérieur:<br/>
+              +0.5 {res.awayOu05}<br/>
+              +1.5 {res.awayOu15}
+            </div>
+          </div>
         </div>
       </div>
     </div>

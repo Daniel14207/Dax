@@ -85,10 +85,10 @@ export default function Admin({ onExit }: AdminProps) {
   const renderUserCard = (user: User, hasTokens: boolean) => (
     <div 
       key={user.id} 
-      className={`bg-[#1e293b] rounded-xl p-4 border flex flex-col gap-4 cursor-pointer transition-colors ${
+      className={`bg-white rounded-xl p-4 border flex flex-col gap-4 cursor-pointer transition-colors ${
         hasTokens 
-          ? 'border-slate-700 hover:border-amber-500/50' 
-          : 'border-slate-800 opacity-75 hover:opacity-100 hover:border-slate-600'
+          ? 'border-slate-200 hover:border-amber-500/50' 
+          : 'border-slate-200 opacity-75 hover:opacity-100 hover:border-slate-600'
       }`}
       onClick={() => setSelectedUser(user)}
     >
@@ -158,7 +158,7 @@ export default function Admin({ onExit }: AdminProps) {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white flex flex-col relative">
-      <div className="bg-[#1e293b] p-4 flex items-center gap-4 sticky top-0 z-10 shadow-md">
+      <div className="bg-white p-4 flex items-center gap-4 sticky top-0 z-10 shadow-md">
         <button onClick={onExit} className="p-2 hover:bg-slate-700 rounded-full transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>
@@ -177,12 +177,12 @@ export default function Admin({ onExit }: AdminProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Rechercher par numéro ou ID..."
-              className="w-full bg-[#1e293b] border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#2dd4bf]"
+              className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#2dd4bf]"
             />
           </div>
           
           <div className="flex flex-wrap gap-2">
-            <div className="flex bg-[#1e293b] rounded-lg p-1 border border-slate-700">
+            <div className="flex bg-white rounded-lg p-1 border border-slate-200">
               <button 
                 onClick={() => setFilterType('all')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
@@ -203,7 +203,7 @@ export default function Admin({ onExit }: AdminProps) {
               </button>
             </div>
 
-            <div className="flex bg-[#1e293b] rounded-lg p-1 border border-slate-700 ml-auto">
+            <div className="flex bg-white rounded-lg p-1 border border-slate-200 ml-auto">
               <button 
                 onClick={() => setSortBy('tokens')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'tokens' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
@@ -223,12 +223,12 @@ export default function Admin({ onExit }: AdminProps) {
         <div className="space-y-8">
           {(filterType === 'all' || filterType === 'with_tokens') && (
             <div>
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-2">
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-200 pb-2">
                 <span className="bg-green-500/20 text-green-400 w-8 h-8 rounded-lg flex items-center justify-center">1️⃣</span>
                 USERS WITH TOKENS ({usersWithTokens.length})
               </h2>
               {usersWithTokens.length === 0 ? (
-                <div className="text-center text-slate-500 py-6 bg-[#1e293b] rounded-xl border border-slate-800">Aucun client avec des tokens</div>
+                <div className="text-center text-slate-500 py-6 bg-white rounded-xl border border-slate-200">Aucun client avec des tokens</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {usersWithTokens.map(user => renderUserCard(user, true))}
@@ -239,12 +239,12 @@ export default function Admin({ onExit }: AdminProps) {
 
           {(filterType === 'all' || filterType === 'no_tokens') && (
             <div>
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-2">
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-200 pb-2">
                 <span className="bg-red-500/20 text-red-400 w-8 h-8 rounded-lg flex items-center justify-center">2️⃣</span>
                 USERS WITHOUT TOKENS ({usersWithoutTokens.length})
               </h2>
               {usersWithoutTokens.length === 0 ? (
-                <div className="text-center text-slate-500 py-6 bg-[#1e293b] rounded-xl border border-slate-800">Aucun client sans tokens</div>
+                <div className="text-center text-slate-500 py-6 bg-white rounded-xl border border-slate-200">Aucun client sans tokens</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {usersWithoutTokens.map(user => renderUserCard(user, false))}
@@ -257,7 +257,7 @@ export default function Admin({ onExit }: AdminProps) {
 
       {selectedUser && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1e293b] rounded-xl p-6 w-full max-w-sm border border-slate-700">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm border border-slate-200">
             <h2 className="text-xl font-bold text-white mb-2">Envoyer des Tokens</h2>
             <p className="text-slate-400 text-sm mb-6">Client: <span className="text-white font-bold">{selectedUser.phone}</span></p>
             
@@ -271,7 +271,7 @@ export default function Admin({ onExit }: AdminProps) {
                     min="1"
                     value={tokenAmount}
                     onChange={(e) => setTokenAmount(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-amber-500 text-lg font-bold"
+                    className="w-full bg-slate-800 border border-slate-200 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-amber-500 text-lg font-bold"
                     placeholder="Ex: 10"
                     autoFocus
                   />

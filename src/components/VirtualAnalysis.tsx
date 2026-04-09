@@ -636,7 +636,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
   return (
     <div className="space-y-6 relative">
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-5">
+        <div className="fixed top-4 right-4 z-50 bg-slate-800 border border-slate-200 text-white px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-5">
           <div className="bg-[#2dd4bf]/20 p-1.5 rounded-full">
             <CheckCircle className="w-5 h-5 text-[#2dd4bf]" />
           </div>
@@ -661,7 +661,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
         }
       />
 
-      <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
+      <div className="bg-white rounded-xl p-4 border border-slate-200">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <span className="bg-[#2dd4bf] text-slate-900 w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
           Historique (Texte)
@@ -672,7 +672,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
             value={historyText}
             onChange={(e) => setHistoryText(e.target.value)}
             placeholder="Collez l'historique ici..."
-            className="w-full h-32 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-[#2dd4bf] resize-none"
+            className="w-full h-32 bg-slate-800 border border-slate-200 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-[#2dd4bf] resize-none"
           />
         </div>
 
@@ -686,7 +686,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
         </button>
       </div>
 
-      <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
+      <div className="bg-white rounded-xl p-4 border border-slate-200">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <span className="bg-[#eab308] text-slate-900 w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
           Nouvelle Analyse (Texte Matchs)
@@ -697,7 +697,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
             value={matchText}
             onChange={(e) => setMatchText(e.target.value)}
             placeholder="Equipe A vs Equipe B 1.50 3.20 4.10"
-            className="w-full h-32 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-[#eab308] resize-none"
+            className="w-full h-32 bg-slate-800 border border-slate-200 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-[#eab308] resize-none"
           />
         </div>
 
@@ -705,7 +705,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
           <select 
             value={selectedLeague}
             onChange={(e) => setSelectedLeague(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] appearance-none"
+            className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] appearance-none"
           >
             {LEAGUES.map(l => (
               <option key={l.id} value={l.id}>{l.name}</option>
@@ -715,7 +715,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
             type="time"
             value={matchTime}
             onChange={(e) => setMatchTime(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308]"
+            className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308]"
           />
         </div>
         <button 
@@ -746,7 +746,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
         }
       />
 
-      <div className="bg-[#1e293b] rounded-xl p-4 border border-slate-800">
+      <div className="bg-white rounded-xl p-4 border border-slate-200">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <span className="bg-[#2dd4bf] text-slate-900 w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
           Analyse Manuelle
@@ -756,7 +756,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
           <select 
             value={manualLeague}
             onChange={(e) => setManualLeague(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] appearance-none"
+            className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] appearance-none"
           >
             {LEAGUES.map(l => (
               <option key={l.id} value={l.id}>{l.name}</option>
@@ -769,14 +769,14 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               placeholder="Équipe Domicile"
               value={manualHomeTeam}
               onChange={(e) => setManualHomeTeam(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308]"
+              className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308]"
             />
             <input
               type="text"
               placeholder="Équipe Extérieur"
               value={manualAwayTeam}
               onChange={(e) => setManualAwayTeam(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308]"
+              className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308]"
             />
           </div>
 
@@ -787,7 +787,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               placeholder="Cote 1"
               value={manualOdd1}
               onChange={(e) => setManualOdd1(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] text-center"
+              className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] text-center"
             />
             <input
               type="number"
@@ -795,7 +795,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               placeholder="Cote X"
               value={manualOddX}
               onChange={(e) => setManualOddX(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] text-center"
+              className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] text-center"
             />
             <input
               type="number"
@@ -803,7 +803,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               placeholder="Cote 2"
               value={manualOdd2}
               onChange={(e) => setManualOdd2(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] text-center"
+              className="w-full bg-slate-800 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-[#eab308] text-center"
             />
           </div>
         </div>
@@ -841,7 +841,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                 {results.map(res => {
                   if (!res.highOdds || res.highOdds.length === 0) return null;
                   return (
-                    <div key={`high-${res.matchId}`} className="bg-slate-800/80 p-3 rounded-lg flex justify-between items-center border border-slate-700">
+                    <div key={`high-${res.matchId}`} className="bg-slate-800/80 p-3 rounded-lg flex justify-between items-center border border-slate-200">
                       <span className="text-white font-medium text-sm">{res.homeTeam} vs {res.awayTeam}</span>
                       <div className="flex gap-2">
                         {res.highOdds.map((odd, idx) => (
@@ -862,13 +862,13 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
             {results.map((res) => {
               const league = LEAGUES.find(l => l.id === res.leagueId);
               return (
-                <div key={res.matchId} className="bg-[#1e293b] rounded-xl overflow-hidden border border-slate-800 shadow-lg relative">
+                <div key={res.matchId} className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-lg relative">
                   {res.isHotMatch && (
                     <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1 z-10 shadow-md">
                       <Flame className="w-3 h-3" /> HOT MATCH
                     </div>
                   )}
-                  <div className="bg-slate-800/80 px-4 py-2 flex justify-between items-center border-b border-slate-700/50">
+                  <div className="bg-slate-800/80 px-4 py-2 flex justify-between items-center border-b border-slate-200/50">
                     <div className="flex items-center gap-2">
                       {league && <img src={league.logo} alt={league.name} className="w-4 h-4 object-contain" />}
                       <span className="text-sm font-medium text-slate-300">{league?.name || 'League'}</span>
@@ -887,7 +887,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                     </div>
                   </div>
                   
-                  <div className="bg-slate-800 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+                  <div className="bg-slate-800 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
                     <img src={getTeamLogo(res.homeTeam, res.leagueId)} alt={res.homeTeam} className="w-6 h-6 object-contain" />
                     <span className="font-bold text-white text-sm flex-1 text-center px-2">
                       {res.originalMatchString || `${res.homeTeam} vs ${res.awayTeam}`}
@@ -895,24 +895,8 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                     <img src={getTeamLogo(res.awayTeam, res.leagueId)} alt={res.awayTeam} className="w-6 h-6 object-contain" />
                   </div>
                   
-                  {/* Display the extracted odds to prove they match the screenshot exactly */}
-                  <div className="bg-slate-800/50 px-4 py-2 border-b border-slate-700 flex justify-center gap-8">
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-slate-500 font-bold">1</span>
-                      <span className="text-sm font-bold text-white">{res.extractedOdds.home.toFixed(2)}</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-slate-500 font-bold">X</span>
-                      <span className="text-sm font-bold text-white">{res.extractedOdds.draw.toFixed(2)}</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-slate-500 font-bold">2</span>
-                      <span className="text-sm font-bold text-white">{res.extractedOdds.away.toFixed(2)}</span>
-                    </div>
-                  </div>
-                  
                   {/* Graphique de tendance visuelle simple */}
-                  <div className="px-4 py-2 bg-slate-800/30 border-b border-slate-700/50 flex items-center gap-2">
+                  <div className="px-4 py-2 bg-slate-800/30 border-b border-slate-200/50 flex items-center gap-2">
                     <span className="text-xs text-slate-500 font-medium w-16">Tendance:</span>
                     <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden flex">
                       <div className="bg-[#2dd4bf] h-full" style={{ width: `${res.confidence}%` }}></div>
@@ -921,96 +905,46 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                   </div>
                   
                   {/* Structure obligatoire pour chaque match */}
-                  <div className="p-4 space-y-3 text-sm">
-                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                      <div className="text-slate-400 mb-1">Match :</div>
-                      <div className="font-bold text-white">{res.originalMatchString || `${res.homeTeam} vs ${res.awayTeam}`}</div>
-                    </div>
-                    
-                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                      <div className="text-slate-400 mb-1">Cotes :</div>
-                      <div className="font-bold text-white">
-                        {res.extractedOdds.home.toFixed(2)} | {res.extractedOdds.draw.toFixed(2)} | {res.extractedOdds.away.toFixed(2)}
-                      </div>
+                  <div className="p-4 space-y-4 text-sm font-medium text-slate-700">
+                    <div>
+                      Mi-temps 1X2: {res.results.ht1x2}<br/>
+                      👉 Double Chance: {res.results.dc}<br/>
+                      👉 Mi-temps DC: {res.results.dcHt}<br/>
+                      👉 Score exact: {res.results.exactScore}<br/>
+                      👉 Mi-temps Score: {res.results.htScore}
                     </div>
 
-                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                      <div className="text-slate-400 mb-1">Analyse :</div>
-                      <div className="font-medium text-white">{res.results.analysis}</div>
+                    <div>
+                      👉 Over/Under:<br/>
+                      +0.5 {res.results.ou05 === 'Over' ? '✔' : '✖'}<br/>
+                      +1.5 {res.results.ou15 === 'Over' ? '✔' : '✖'}<br/>
+                      +2.5 {res.results.ou25 === 'Over' ? '✔' : '✖'}<br/>
+                      +3.5 {res.results.ou35 === 'Over' ? '✔' : '✖'}
                     </div>
 
-                    {isVip ? (
-                      <div className="bg-gradient-to-br from-amber-900/40 to-yellow-900/40 p-4 rounded-lg border border-amber-500/30 space-y-2">
-                        <h4 className="font-bold text-amber-400 mb-3 flex items-center gap-2">
-                          <Gem className="w-4 h-4" /> VIP ULTRA ANALYSE
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">Mi-temps 1X2:</span>
-                            <span className="font-bold text-white">{res.results.ht1x2}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">Double Chance (HT & FT):</span>
-                            <span className="font-bold text-white">{res.results.dcHt} / {res.results.dc}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">Score Exact (HT & FT):</span>
-                            <span className="font-bold text-white">{res.results.htScore} / {res.results.exactScore}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">Over/Under (0.5 - 3.5):</span>
-                            <span className="font-bold text-white">{res.results.ou05[0]}, {res.results.ou15[0]}, {res.results.ou25[0]}, {res.results.ou35[0]}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">GG/NG:</span>
-                            <span className="font-bold text-white">{res.results.ggng}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">Total Goals:</span>
-                            <span className="font-bold text-white">{res.results.totalGoals}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">HT/FT:</span>
-                            <span className="font-bold text-white">{res.results.htft}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">Pair/Impair:</span>
-                            <span className="font-bold text-white">{res.results.oddEven}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">First Goal:</span>
-                            <span className="font-bold text-white">{res.results.firstGoalMin}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">Home goals (+1.5, +2.5):</span>
-                            <span className="font-bold text-white">
-                              {res.results.ft1x2 === '1' ? 'O, U' : 'U, U'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between border-b border-amber-500/10 pb-1">
-                            <span className="text-slate-400">Away goals (+0.5, +1.5):</span>
-                            <span className="font-bold text-white">
-                              {res.results.ft1x2 === '2' ? 'O, O' : (res.results.ft1x2 === 'X' ? 'O, U' : 'U, U')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                          <div className="text-slate-400 mb-1">Résultat probable :</div>
-                          <div className="font-bold text-[#2dd4bf]">{res.results.ft1x2 === '1' ? res.homeTeam : res.results.ft1x2 === '2' ? res.awayTeam : 'Match Nul'}</div>
-                        </div>
-                        <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                          <div className="text-slate-400 mb-1">Score exact :</div>
-                          <div className="font-bold text-[#eab308]">{res.results.exactScore}</div>
-                        </div>
-                      </div>
-                    )}
+                    <div>
+                      👉 GG/NG: {res.results.ggng}<br/>
+                      👉 Total buts: {res.results.totalGoals}<br/>
+                      👉 HT/FT: {res.results.htft}<br/>
+                      👉 Pair/Impair: {res.results.oddEven === 'Odd' ? 'Impair' : 'Pair'}<br/>
+                      👉 First goal: {res.results.firstGoalMin}
+                    </div>
+
+                    <div>
+                      👉 Team domicile:<br/>
+                      +1.5 {res.results.ft1x2 === '1' ? '✔' : '✖'}<br/>
+                      +2.5 ✖
+                    </div>
+
+                    <div>
+                      👉 Team extérieur:<br/>
+                      +0.5 {res.results.ft1x2 === '2' || res.results.ft1x2 === 'X' ? '✔' : '✖'}<br/>
+                      +1.5 {res.results.ft1x2 === '2' ? '✔' : '✖'}
+                    </div>
                   </div>
 
                   {/* COPY BUTTON */}
-                  <div className="p-3 border-t border-slate-700/50 bg-slate-800/30">
+                  <div className="p-3 border-t border-slate-200/50 bg-slate-800/30">
                     <button
                       onClick={() => handleCopy(res)}
                       className="w-full py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium text-sm flex items-center justify-center gap-2 transition-colors"
@@ -1037,7 +971,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               <div className="space-y-3">
                 {multiples.map(mult => (
                   <div key={mult.id} className="bg-slate-900/50 p-3 rounded-lg border border-emerald-500/20">
-                    <div className="mb-2 border-b border-slate-700/50 pb-2">
+                    <div className="mb-2 border-b border-slate-200/50 pb-2">
                       <span className="text-emerald-400 font-bold text-sm">Multiple {mult.id + 1}</span>
                     </div>
                     <div className="space-y-2 mb-3">
@@ -1048,7 +982,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                         </div>
                       ))}
                     </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-200/50">
                       <span className="text-slate-400 text-sm font-bold">Total :</span>
                       <span className="text-emerald-400 font-bold text-lg">{mult.totalOdds}</span>
                     </div>
