@@ -6,7 +6,7 @@ import { TutorialCard } from './TutorialCard';
 
 interface Props {
   userTokens: number;
-  onAnalyze: () => void;
+  onAnalyze: (amount: number) => void;
   isVip?: boolean;
 }
 
@@ -33,8 +33,8 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
 
   if (isVip && userTokens < 10000) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <ShieldCheck className="w-12 h-12 text-red-500 mx-auto mb-4" />
+      <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-6 text-center">
+        <ShieldCheck className="w-12 h-12 text-[#EF4444] mx-auto mb-4" />
         <h3 className="text-lg font-bold text-red-700 mb-2">Accès Refusé</h3>
         <p className="text-red-600 font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
       </div>
@@ -255,7 +255,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
   };
 
   const handleAnalyze = async () => {
-    if (userTokens <= 0) {
+    if (userTokens < 500) {
       showToast('Tokens insuffisants');
       return;
     }
@@ -269,7 +269,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
     }
 
     try {
-      onAnalyze(); // Deduct token
+      onAnalyze(500); // Deduct token
       setIsAnalyzing(true);
       showToast('Analyse en cours...');
 
@@ -401,7 +401,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
   };
 
   const handleManualAnalyze = async () => {
-    if (userTokens <= 0) {
+    if (userTokens < 500) {
       showToast('Tokens insuffisants');
       return;
     }
@@ -636,9 +636,9 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
   return (
     <div className="space-y-6 relative">
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-[#1F2937] border border-[#E5E7EB] text-white px-4 py-3 rounded-xl active:scale-95 transition-transform shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-5">
-          <div className="bg-[#2dd4bf]/20 p-1.5 rounded-full">
-            <CheckCircle className="w-5 h-5 text-[#2dd4bf]" />
+        <div className="fixed top-4 right-4 z-50 bg-[var(--input-bg)] border border-[var(--border-color)] text-white px-4 py-3 rounded-xl active:scale-95 transition-transform shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-5">
+          <div className="bg-[var(--btn-primary)]/20 p-1.5 rounded-full">
+            <CheckCircle className="w-5 h-5 text-[var(--btn-primary)]" />
           </div>
           <p className="font-medium text-sm">{toastMessage}</p>
         </div>
@@ -661,9 +661,9 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
         }
       />
 
-      <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-4 border border-[#E5E7EB]">
-        <h3 className="text-lg font-bold text-[#111827] mb-4 flex items-center gap-2">
-          <span className="bg-[#2dd4bf] text-[#111827] w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
+      <div className="bg-[var(--card-bg)] rounded-2xl theme-shadow p-4 border border-[var(--border-color)]">
+        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+          <span className="bg-[var(--btn-primary)] text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
           Historique (Texte)
         </h3>
         
@@ -672,23 +672,23 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
             value={historyText}
             onChange={(e) => setHistoryText(e.target.value)}
             placeholder="Collez l'historique ici..."
-            className="w-full h-32 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] text-sm focus:outline-none focus:border-[#2dd4bf] resize-none transition-colors"
+            className="w-full h-32 bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--input-focus)] resize-none transition-colors"
           />
         </div>
 
         <button 
           onClick={handleSaveHistory}
           disabled={isSavingHistory || !historyText.trim()}
-          className="w-full bg-[#E5E7EB] hover:bg-gray-300 disabled:opacity-50 text-[#111827] font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2"
+          className="w-full bg-[var(--tab-bg)] hover:bg-[var(--border-color)] disabled:opacity-50 text-[var(--text-primary)] font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2"
         >
           {isSavingHistory ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
           {isSavingHistory ? 'Sauvegarde en cours...' : 'Sauvegarder historique'}
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-4 border border-[#E5E7EB]">
-        <h3 className="text-lg font-bold text-[#111827] mb-4 flex items-center gap-2">
-          <span className="bg-[#FACC15] text-[#111827] w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
+      <div className="bg-[var(--card-bg)] rounded-2xl theme-shadow p-4 border border-[var(--border-color)]">
+        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+          <span className="bg-[var(--btn-primary)] text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
           Nouvelle Analyse (Texte Matchs)
         </h3>
         
@@ -697,7 +697,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
             value={matchText}
             onChange={(e) => setMatchText(e.target.value)}
             placeholder="Equipe A vs Equipe B 1.50 3.20 4.10"
-            className="w-full h-32 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] text-sm focus:outline-none focus:border-[#FACC15] resize-none transition-colors"
+            className="w-full h-32 bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--input-focus)] resize-none transition-colors"
           />
         </div>
 
@@ -705,7 +705,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
           <select 
             value={selectedLeague}
             onChange={(e) => setSelectedLeague(e.target.value)}
-            className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-[#FACC15] appearance-none transition-colors"
+            className="w-full bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] appearance-none transition-colors"
           >
             {LEAGUES.map(l => (
               <option key={l.id} value={l.id}>{l.name}</option>
@@ -715,20 +715,20 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
             type="time"
             value={matchTime}
             onChange={(e) => setMatchTime(e.target.value)}
-            className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-[#FACC15] transition-colors"
+            className="w-full bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] transition-colors"
           />
         </div>
         <button 
           onClick={handleAnalyze}
-          disabled={isAnalyzing || userTokens <= 0 || !matchText.trim()}
+          disabled={isAnalyzing || userTokens < 500 || !matchText.trim()}
           className={`w-full font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-            userTokens <= 0 
-              ? 'bg-red-50 border border-red-200 text-red-500' 
-              : 'bg-[#FACC15] hover:bg-yellow-500 text-[#111827]'
+            userTokens < 500 
+              ? 'bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444]' 
+              : 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white'
           }`}
         >
-          {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens <= 0 ? null : <Search className="w-5 h-5" />}
-          {isAnalyzing ? 'Analyse IA en cours...' : userTokens <= 0 ? 'Tokens insuffisants' : 'Lancer l\'analyse (1 Token)'}
+          {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens < 500 ? null : <Search className="w-5 h-5" />}
+          {isAnalyzing ? 'Analyse IA en cours...' : userTokens < 500 ? 'Tokens insuffisants' : 'Lancer l\'analyse (500 Tokens)'}
         </button>
       </div>
 
@@ -746,9 +746,9 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
         }
       />
 
-      <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-4 border border-[#E5E7EB]">
-        <h3 className="text-lg font-bold text-[#111827] mb-4 flex items-center gap-2">
-          <span className="bg-[#2dd4bf] text-[#111827] w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
+      <div className="bg-[var(--card-bg)] rounded-2xl theme-shadow p-4 border border-[var(--border-color)]">
+        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+          <span className="bg-[var(--btn-primary)] text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
           Analyse Manuelle
         </h3>
         
@@ -756,7 +756,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
           <select 
             value={manualLeague}
             onChange={(e) => setManualLeague(e.target.value)}
-            className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-[#FACC15] appearance-none transition-colors"
+            className="w-full bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] appearance-none transition-colors"
           >
             {LEAGUES.map(l => (
               <option key={l.id} value={l.id}>{l.name}</option>
@@ -769,14 +769,14 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               placeholder="Équipe Domicile"
               value={manualHomeTeam}
               onChange={(e) => setManualHomeTeam(e.target.value)}
-              className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-[#FACC15] transition-colors"
+              className="w-full bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] transition-colors"
             />
             <input
               type="text"
               placeholder="Équipe Extérieur"
               value={manualAwayTeam}
               onChange={(e) => setManualAwayTeam(e.target.value)}
-              className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-[#FACC15] transition-colors"
+              className="w-full bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] transition-colors"
             />
           </div>
 
@@ -787,7 +787,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               placeholder="Cote 1"
               value={manualOdd1}
               onChange={(e) => setManualOdd1(e.target.value)}
-              className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-[#FACC15] text-center transition-colors"
+              className="w-full bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] text-center transition-colors"
             />
             <input
               type="number"
@@ -795,7 +795,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               placeholder="Cote X"
               value={manualOddX}
               onChange={(e) => setManualOddX(e.target.value)}
-              className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-[#FACC15] text-center transition-colors"
+              className="w-full bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] text-center transition-colors"
             />
             <input
               type="number"
@@ -803,37 +803,37 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               placeholder="Cote 2"
               value={manualOdd2}
               onChange={(e) => setManualOdd2(e.target.value)}
-              className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 text-[#111827] focus:outline-none focus:border-[#FACC15] text-center transition-colors"
+              className="w-full bg-[var(--tab-bg)] border border-[var(--border-color)] rounded-xl p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] text-center transition-colors"
             />
           </div>
         </div>
 
         <button 
           onClick={handleManualAnalyze}
-          disabled={isAnalyzing || userTokens <= 0}
+          disabled={isAnalyzing || userTokens < 500}
           className={`w-full font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-            userTokens <= 0 
-              ? 'bg-red-50 border border-red-200 text-red-500' 
-              : 'bg-[#2dd4bf] hover:bg-[#14b8a6] text-[#111827]'
+            userTokens < 500 
+              ? 'bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444]' 
+              : 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white'
           }`}
         >
-          {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens <= 0 ? null : <Edit3 className="w-5 h-5" />}
-          {isAnalyzing ? 'Analyse en cours...' : userTokens <= 0 ? 'Tokens insuffisants' : 'Analyse Manuelle (1 Token)'}
+          {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens < 500 ? null : <Edit3 className="w-5 h-5" />}
+          {isAnalyzing ? 'Analyse en cours...' : userTokens < 500 ? 'Tokens insuffisants' : 'Analyse Manuelle (500 Tokens)'}
         </button>
       </div>
 
       {results.length > 0 && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-[#111827]">Résultats d'Analyse</h3>
-            <button onClick={clearResults} className="text-red-500 hover:text-red-600 flex items-center gap-1 text-sm font-medium">
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Résultats d'Analyse</h3>
+            <button onClick={clearResults} className="text-[#EF4444] hover:text-red-600 flex items-center gap-1 text-sm font-medium">
               <Trash2 className="w-4 h-4" /> Effacer
             </button>
           </div>
 
           {/* COTES > 10 SECTION */}
           {results.some(res => res.highOdds && res.highOdds.length > 0) && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 shadow-sm">
+            <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-4 shadow-sm">
               <h4 className="font-bold text-red-600 mb-3 flex items-center gap-2">
                 <Flame className="w-5 h-5" /> COTES PLUS DE 10 DÉTECTÉES
               </h4>
@@ -841,11 +841,11 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                 {results.map(res => {
                   if (!res.highOdds || res.highOdds.length === 0) return null;
                   return (
-                    <div key={`high-${res.matchId}`} className="bg-white p-3 rounded-xl border border-red-100 flex justify-between items-center shadow-sm">
-                      <span className="text-[#111827] font-medium text-sm">{res.homeTeam} vs {res.awayTeam}</span>
+                    <div key={`high-${res.matchId}`} className="bg-[var(--card-bg)] p-3 rounded-xl border border-[#EF4444]/20 flex justify-between items-center shadow-sm">
+                      <span className="text-[var(--text-primary)] font-medium text-sm">{res.homeTeam} vs {res.awayTeam}</span>
                       <div className="flex gap-2">
                         {res.highOdds.map((odd, idx) => (
-                          <span key={idx} className="bg-red-500 text-white font-bold px-2 py-1 rounded text-xs shadow-sm">
+                          <span key={idx} className="bg-[#EF4444] text-white font-bold px-2 py-1 rounded text-xs shadow-sm">
                             {odd.pick}: {odd.odd.toFixed(2)}
                           </span>
                         ))}
@@ -871,16 +871,16 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               }
 
               return (
-                <div key={res.matchId} className={`bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden border border-[#E5E7EB] border-l-4 ${borderColorClass} relative animate-in fade-in duration-500`}>
+                <div key={res.matchId} className={`bg-[var(--card-bg)] rounded-2xl theme-shadow overflow-hidden border border-[var(--border-color)] border-l-4 ${borderColorClass} relative animate-in fade-in duration-500`}>
                   {res.isHotMatch && (
-                    <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1 z-10 shadow-md">
+                    <div className="absolute top-0 right-0 bg-[#EF4444] text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1 z-10 shadow-md">
                       <Flame className="w-3 h-3" /> HOT MATCH
                     </div>
                   )}
-                  <div className="bg-[#F9FAFB] px-4 py-2 flex justify-between items-center border-b border-[#E5E7EB]">
+                  <div className="bg-[var(--tab-bg)] px-4 py-2 flex justify-between items-center border-b border-[var(--border-color)]">
                     <div className="flex items-center gap-2">
                       {league && <img src={league.logo} alt={league.name} className="w-4 h-4 object-contain" />}
-                      <span className="text-sm font-medium text-[#6B7280]">{league?.name || 'League'}</span>
+                      <span className="text-sm font-medium text-[var(--text-secondary)]">{league?.name || 'League'}</span>
                     </div>
                     <div className="flex items-center gap-4">
                       {res.confidence && (
@@ -893,32 +893,32 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                         </div>
                       )}
                       <div className="flex items-center gap-1 text-xs font-medium">
-                        <Clock className="w-3 h-3 text-[#9CA3AF]" />
-                        <span className="text-[#9CA3AF]">{res.time}</span>
+                        <Clock className="w-3 h-3 text-[var(--text-secondary)]" />
+                        <span className="text-[var(--text-secondary)]">{res.time}</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-white px-4 py-3 border-b border-[#E5E7EB] flex justify-between items-center">
+                  <div className="bg-[var(--card-bg)] px-4 py-3 border-b border-[var(--border-color)] flex justify-between items-center">
                     <img src={getTeamLogo(res.homeTeam, res.leagueId)} alt={res.homeTeam} className="w-6 h-6 object-contain" />
-                    <span className="font-bold text-[#111827] text-sm flex-1 text-center px-2">
+                    <span className="font-bold text-[var(--text-primary)] text-sm flex-1 text-center px-2">
                       {res.originalMatchString || `${res.homeTeam} vs ${res.awayTeam}`}
                     </span>
                     <img src={getTeamLogo(res.awayTeam, res.leagueId)} alt={res.awayTeam} className="w-6 h-6 object-contain" />
                   </div>
                   
                   {/* Structure obligatoire pour chaque match */}
-                  <div className="p-4 space-y-4 text-sm font-medium text-[#6B7280]">
+                  <div className="p-4 space-y-4 text-sm font-medium text-[var(--text-secondary)]">
                     <div>
-                      <span className="text-[#111827] font-semibold">Mi-temps 1X2:</span> {res.results.ht1x2}<br/>
-                      👉 <span className="text-[#111827] font-semibold">Double Chance:</span> {res.results.dc}<br/>
-                      👉 <span className="text-[#111827] font-semibold">Mi-temps DC:</span> {res.results.dcHt}<br/>
-                      👉 <span className="text-[#111827] font-semibold">Score exact:</span> {res.results.exactScore}<br/>
-                      👉 <span className="text-[#111827] font-semibold">Mi-temps Score:</span> {res.results.htScore}
+                      <span className="text-[var(--text-primary)] font-semibold">Mi-temps 1X2:</span> {res.results.ht1x2}<br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Double Chance:</span> {res.results.dc}<br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Mi-temps DC:</span> {res.results.dcHt}<br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Score exact:</span> {res.results.exactScore}<br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Mi-temps Score:</span> {res.results.htScore}
                     </div>
 
                     <div>
-                      👉 <span className="text-[#111827] font-semibold">Over/Under:</span><br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Over/Under:</span><br/>
                       +0.5 {res.results.ou05 === 'Over' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
                       +1.5 {res.results.ou15 === 'Over' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
                       +2.5 {res.results.ou25 === 'Over' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
@@ -926,34 +926,34 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                     </div>
 
                     <div>
-                      👉 <span className="text-[#111827] font-semibold">GG/NG:</span> {res.results.ggng}<br/>
-                      👉 <span className="text-[#111827] font-semibold">Total buts:</span> {res.results.totalGoals}<br/>
-                      👉 <span className="text-[#111827] font-semibold">HT/FT:</span> {res.results.htft}<br/>
-                      👉 <span className="text-[#111827] font-semibold">Pair/Impair:</span> {res.results.oddEven === 'Odd' ? 'Impair' : 'Pair'}<br/>
-                      👉 <span className="text-[#111827] font-semibold">First goal:</span> {res.results.firstGoalMin}
+                      👉 <span className="text-[var(--text-primary)] font-semibold">GG/NG:</span> {res.results.ggng}<br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Total buts:</span> {res.results.totalGoals}<br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">HT/FT:</span> {res.results.htft}<br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Pair/Impair:</span> {res.results.oddEven === 'Odd' ? 'Impair' : 'Pair'}<br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">First goal:</span> {res.results.firstGoalMin}
                     </div>
 
                     <div>
-                      👉 <span className="text-[#111827] font-semibold">Team domicile:</span><br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Team domicile:</span><br/>
                       +1.5 {res.results.ft1x2 === '1' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
                       +2.5 <span className="text-[#EF4444]">✖</span>
                     </div>
 
                     <div>
-                      👉 <span className="text-[#111827] font-semibold">Team extérieur:</span><br/>
+                      👉 <span className="text-[var(--text-primary)] font-semibold">Team extérieur:</span><br/>
                       +0.5 {res.results.ft1x2 === '2' || res.results.ft1x2 === 'X' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
                       +1.5 {res.results.ft1x2 === '2' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}
                     </div>
                   </div>
 
                   {/* COPY BUTTON */}
-                  <div className="p-3 border-t border-[#E5E7EB] bg-[#F9FAFB]">
+                  <div className="p-3 border-t border-[var(--border-color)] bg-[var(--tab-bg)]">
                     <button
                       onClick={() => handleCopy(res)}
-                      className="w-full py-2 rounded-xl active:scale-95 transition-transform bg-[#FACC15] hover:bg-yellow-500 text-[#111827] font-bold text-sm flex items-center justify-center gap-2"
+                      className="w-full py-2 rounded-xl active:scale-95 transition-transform bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white font-bold text-sm flex items-center justify-center gap-2"
                     >
                       {copiedId === res.matchId ? (
-                        <><CheckCircle className="w-4 h-4 text-[#111827]" /> Copié !</>
+                        <><CheckCircle className="w-4 h-4 text-[var(--text-primary)]" /> Copié !</>
                       ) : (
                         <><Copy className="w-4 h-4" /> Copier le pronostic</>
                       )}
@@ -973,8 +973,8 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               </h4>
               <div className="space-y-3">
                 {multiples.map(mult => (
-                  <div key={mult.id} className="bg-[#111827]/50 p-3 rounded-xl active:scale-95 transition-transform border border-emerald-500/20">
-                    <div className="mb-2 border-b border-[#E5E7EB]/50 pb-2">
+                  <div key={mult.id} className="bg-[var(--tab-bg)] p-3 rounded-xl active:scale-95 transition-transform border border-emerald-500/20">
+                    <div className="mb-2 border-b border-[var(--border-color)]/50 pb-2">
                       <span className="text-emerald-400 font-bold text-sm">Multiple {mult.id + 1}</span>
                     </div>
                     <div className="space-y-2 mb-3">
@@ -985,8 +985,8 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                         </div>
                       ))}
                     </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-[#E5E7EB]/50">
-                      <span className="text-[#9CA3AF] text-sm font-bold">Total :</span>
+                    <div className="flex justify-between items-center pt-2 border-t border-[var(--border-color)]/50">
+                      <span className="text-[var(--text-secondary)] text-sm font-bold">Total :</span>
                       <span className="text-emerald-400 font-bold text-lg">{mult.totalOdds}</span>
                     </div>
                   </div>
@@ -997,25 +997,25 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
 
           {/* COTE BOOST SECTION */}
           {coteBoosts.length > 0 && (
-            <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/30 rounded-xl p-4">
-              <h4 className="text-red-400 font-bold flex items-center gap-2 mb-3">
+            <div className="bg-gradient-to-r from-[#EF4444]/10 to-[#F59E0B]/10 border border-[#EF4444]/30 rounded-xl p-4">
+              <h4 className="text-[#EF4444] font-bold flex items-center gap-2 mb-3">
                 <TrendingUp className="w-5 h-5" />
                 Cote plus de 10 cible dans le Capture Match
               </h4>
               <div className="space-y-2">
                 {coteBoosts.map((boost: any) => (
-                  <div key={boost.id} className="bg-[#111827]/50 p-3 rounded-xl active:scale-95 transition-transform flex flex-col gap-2 border border-red-500/20">
+                  <div key={boost.id} className="bg-[var(--tab-bg)] p-3 rounded-xl active:scale-95 transition-transform flex flex-col gap-2 border border-[#EF4444]/20">
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="text-white font-bold text-sm">{boost.match}</div>
-                        <div className="text-[#9CA3AF] text-xs">{boost.type}: <span className="text-[#FACC15] font-bold">{boost.pick}</span></div>
+                        <div className="text-[var(--text-secondary)] text-xs">{boost.type}: <span className="text-[var(--btn-primary)] font-bold">{boost.pick}</span></div>
                       </div>
-                      <div className="bg-red-500/20 text-red-400 font-bold px-3 py-1 rounded border border-red-500/30">
+                      <div className="bg-[#EF4444]/20 text-[#EF4444] font-bold px-3 py-1 rounded border border-[#EF4444]/30">
                         {boost.odd}
                       </div>
                     </div>
                     {boost.comment && (
-                      <div className="text-xs text-red-300/80 italic border-t border-red-500/10 pt-2 mt-1">
+                      <div className="text-xs text-red-300/80 italic border-t border-[#EF4444]/10 pt-2 mt-1">
                         💡 {boost.comment}
                       </div>
                     )}

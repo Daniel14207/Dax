@@ -1,4 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Default Purple Theme */
+    --bg-gradient-from: #2E1065;
+    --bg-gradient-to: #4C1D95;
+    --card-bg: #FFFFFF;
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --input-bg: #FFFFFF;
+    --input-border: #E5E7EB;
+    --input-focus: #8B5CF6;
+    --btn-primary: #8B5CF6;
+    --btn-hover: #7C3AED;
+    --shadow-color: rgba(0, 0, 0, 0.15);
+    --header-bg: #0D0D0D;
+    --nav-bg: #0D0D0D;
+    --border-color: #E5E7EB;
+    --tab-bg: #F9FAFB;
+    --tab-active-bg: #8B5CF6;
+    --tab-active-text: #FFFFFF;
+  }
+
+  .theme-dark {
+    --bg-gradient-from: #0D0D0D;
+    --bg-gradient-to: #0D0D0D;
+    --card-bg: #1F2933;
+    --text-primary: #FFFFFF;
+    --text-secondary: #9CA3AF;
+    --input-bg: #374151;
+    --input-border: #4B5563;
+    --input-focus: #8B5CF6;
+    --btn-primary: #8B5CF6;
+    --btn-hover: #7C3AED;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --header-bg: #000000;
+    --nav-bg: #000000;
+    --border-color: #374151;
+    --tab-bg: #1F2933;
+    --tab-active-bg: #8B5CF6;
+    --tab-active-text: #FFFFFF;
+  }
+
+  .theme-light {
+    --bg-gradient-from: #F5F7FA;
+    --bg-gradient-to: #F5F7FA;
+    --card-bg: #FFFFFF;
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --input-bg: #FFFFFF;
+    --input-border: #E5E7EB;
+    --input-focus: #8B5CF6;
+    --btn-primary: #8B5CF6;
+    --btn-hover: #7C3AED;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+    --header-bg: #0D0D0D;
+    --nav-bg: #0D0D0D;
+    --border-color: #E5E7EB;
+    --tab-bg: #F9FAFB;
+    --tab-active-bg: #8B5CF6;
+    --tab-active-text: #FFFFFF;
+  }
+}
+
+@theme {
+  --color-theme-bg-from: var(--bg-gradient-from);
+  --color-theme-bg-to: var(--bg-gradient-to);
+  --color-theme-card: var(--card-bg);
+  --color-theme-text-primary: var(--text-primary);
+  --color-theme-text-secondary: var(--text-secondary);
+  --color-theme-input-bg: var(--input-bg);
+  --color-theme-input-border: var(--input-border);
+  --color-theme-input-focus: var(--input-focus);
+  --color-theme-btn-primary: var(--btn-primary);
+  --color-theme-btn-hover: var(--btn-hover);
+  --color-theme-header: var(--header-bg);
+  --color-theme-nav: var(--nav-bg);
+  --color-theme-border: var(--border-color);
+  --color-theme-tab-bg: var(--tab-bg);
+  --color-theme-tab-active-bg: var(--tab-active-bg);
+  --color-theme-tab-active-text: var(--tab-active-text);
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+}
 
 @layer utilities {
   .hide-scrollbar::-webkit-scrollbar {
@@ -10,5 +107,8 @@
   }
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  .theme-shadow {
+    box-shadow: 0 6px 25px var(--shadow-color);
   }
 }

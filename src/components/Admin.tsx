@@ -85,44 +85,44 @@ export default function Admin({ onExit }: AdminProps) {
   const renderUserCard = (user: User, hasTokens: boolean) => (
     <div 
       key={user.id} 
-      className={`bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-4 border flex flex-col gap-4 cursor-pointer transition-colors ${
+      className={`bg-[var(--card-bg)] rounded-2xl theme-shadow p-4 border flex flex-col gap-4 cursor-pointer transition-colors ${
         hasTokens 
-          ? 'border-[#E5E7EB] hover:border-amber-500/50' 
-          : 'border-[#E5E7EB] opacity-75 hover:opacity-100 hover:border-slate-600'
+          ? 'border-[var(--border-color)] hover:border-[var(--input-focus)]/50' 
+          : 'border-[var(--border-color)] opacity-75 hover:opacity-100 hover:border-slate-600'
       }`}
       onClick={() => setSelectedUser(user)}
     >
       <div className="flex justify-between items-start">
         <div>
-          <div className="font-bold text-lg text-white">{user.phone}</div>
-          <div className="text-xs text-[#6B7280] font-mono mt-1">ID: {user.id}</div>
-          <div className="text-xs text-[#6B7280] mt-1">
+          <div className="font-bold text-lg text-[var(--text-primary)]">{user.phone}</div>
+          <div className="text-xs text-[var(--text-secondary)] font-mono mt-1">ID: {user.id}</div>
+          <div className="text-xs text-[var(--text-secondary)] mt-1">
             Inscrit le: {new Date(user.createdAt).toLocaleDateString('fr-FR')}
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           {hasTokens ? (
-            <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-green-500/20 text-green-400">
+            <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-[#22C55E]/20 text-[#22C55E]">
               ACTIVE
             </span>
           ) : (
-            <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-red-500/20 text-red-400">
+            <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-[#EF4444]/20 text-[#EF4444]">
               NO TOKENS
             </span>
           )}
-          <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.status === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-[#F9FAFB]0/20 text-[#9CA3AF]'}`}>
+          <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.status === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-[var(--tab-bg)]0/20 text-[var(--text-secondary)]'}`}>
             {user.status === 'active' ? 'Compte Actif' : 'Compte Inactif'}
           </span>
         </div>
       </div>
 
-      <div className={`flex items-center justify-between p-3 rounded-xl active:scale-95 transition-transform ${hasTokens ? 'bg-[#1F2937]/80' : 'bg-[#1F2937]/30'}`}>
+      <div className={`flex items-center justify-between p-3 rounded-xl active:scale-95 transition-transform ${hasTokens ? 'bg-[var(--input-bg)] opacity-80' : 'bg-[var(--input-bg)] opacity-30'}`}>
         <div className="flex items-center gap-2">
-          <Coins className={`w-5 h-5 ${hasTokens ? 'text-[#FACC15]' : 'text-[#6B7280]'}`} />
-          <span className={`text-lg ${hasTokens ? 'font-black text-white' : 'font-medium text-[#9CA3AF]'}`}>
+          <Coins className={`w-5 h-5 ${hasTokens ? 'text-[var(--btn-primary)]' : 'text-[var(--text-secondary)]'}`} />
+          <span className={`text-lg ${hasTokens ? 'font-black text-[var(--text-primary)]' : 'font-medium text-[var(--text-secondary)]'}`}>
             {user.tokens}
           </span>
-          <span className="text-[#9CA3AF] text-sm">Tokens</span>
+          <span className="text-[var(--text-secondary)] text-sm">Tokens</span>
         </div>
         <button 
           onClick={(e) => {
@@ -131,8 +131,8 @@ export default function Admin({ onExit }: AdminProps) {
           }}
           className={`px-4 py-2 rounded-xl active:scale-95 transition-transform font-bold transition-colors text-sm ${
             hasTokens 
-              ? 'bg-[#FACC15] hover:bg-[#ca8a04] text-[#111827]' 
-              : 'bg-gray-800 hover:bg-gray-700 text-white'
+              ? 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white' 
+              : 'bg-[var(--input-bg)] hover:bg-[var(--border-color)] text-white'
           }`}
         >
           ENVOYER TOKENS
@@ -146,7 +146,7 @@ export default function Admin({ onExit }: AdminProps) {
         }}
         className={`w-full py-2 rounded-xl active:scale-95 transition-transform font-medium flex items-center justify-center gap-2 transition-colors ${
           user.status === 'active' 
-            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' 
+            ? 'bg-[#EF4444]/10 text-[#EF4444] hover:bg-[#EF4444]/20' 
             : 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
         }`}
       >
@@ -157,13 +157,13 @@ export default function Admin({ onExit }: AdminProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col relative">
-      <div className="bg-white p-4 flex items-center gap-4 sticky top-0 z-10 shadow-md">
-        <button onClick={onExit} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+    <div className="min-h-screen bg-gradient-to-br from-theme-bg-from to-theme-bg-to text-[var(--text-primary)] flex flex-col relative">
+      <div className="bg-[var(--card-bg)] p-4 flex items-center gap-4 sticky top-0 z-10 shadow-md">
+        <button onClick={onExit} className="p-2 hover:bg-[var(--input-bg)] rounded-full transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-xl font-bold flex-1">Panel Administrateur</h1>
-        <div className="bg-[#1F2937] px-3 py-1 rounded-full text-sm font-medium text-[#2dd4bf]">
+        <div className="bg-[var(--input-bg)] px-3 py-1 rounded-full text-sm font-medium text-[var(--btn-primary)]">
           {users.length} Clients
         </div>
       </div>
@@ -171,48 +171,48 @@ export default function Admin({ onExit }: AdminProps) {
       <div className="p-4 flex-1 overflow-y-auto">
         <div className="space-y-4 mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280] w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] w-5 h-5" />
             <input 
               type="text" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Rechercher par numéro ou ID..."
-              className="w-full bg-white border border-[#E5E7EB] rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#2dd4bf]"
+              className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)]"
             />
           </div>
           
           <div className="flex flex-wrap gap-2">
-            <div className="flex bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-1 border border-[#E5E7EB]">
+            <div className="flex bg-[var(--card-bg)] rounded-2xl theme-shadow p-1 border border-[var(--border-color)]">
               <button 
                 onClick={() => setFilterType('all')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'all' ? 'bg-gray-800 text-white' : 'text-[#9CA3AF] hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'all' ? 'bg-[var(--input-bg)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 ALL
               </button>
               <button 
                 onClick={() => setFilterType('with_tokens')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'with_tokens' ? 'bg-green-500/20 text-green-400' : 'text-[#9CA3AF] hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'with_tokens' ? 'bg-[#22C55E]/20 text-[#22C55E]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 WITH TOKENS
               </button>
               <button 
                 onClick={() => setFilterType('no_tokens')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'no_tokens' ? 'bg-red-500/20 text-red-400' : 'text-[#9CA3AF] hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'no_tokens' ? 'bg-[#EF4444]/20 text-[#EF4444]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 NO TOKENS
               </button>
             </div>
 
-            <div className="flex bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-1 border border-[#E5E7EB] ml-auto">
+            <div className="flex bg-[var(--card-bg)] rounded-2xl theme-shadow p-1 border border-[var(--border-color)] ml-auto">
               <button 
                 onClick={() => setSortBy('tokens')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'tokens' ? 'bg-gray-800 text-white' : 'text-[#9CA3AF] hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'tokens' ? 'bg-[var(--input-bg)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 <TrendingUp className="w-4 h-4" /> Tokens
               </button>
               <button 
                 onClick={() => setSortBy('date')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'date' ? 'bg-gray-800 text-white' : 'text-[#9CA3AF] hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'date' ? 'bg-[var(--input-bg)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 <Calendar className="w-4 h-4" /> Date
               </button>
@@ -223,12 +223,12 @@ export default function Admin({ onExit }: AdminProps) {
         <div className="space-y-8">
           {(filterType === 'all' || filterType === 'with_tokens') && (
             <div>
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-[#E5E7EB] pb-2">
-                <span className="bg-green-500/20 text-green-400 w-8 h-8 rounded-xl active:scale-95 transition-transform flex items-center justify-center">1️⃣</span>
+              <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2 border-b border-[var(--border-color)] pb-2">
+                <span className="bg-[#22C55E]/20 text-[#22C55E] w-8 h-8 rounded-xl active:scale-95 transition-transform flex items-center justify-center">1️⃣</span>
                 USERS WITH TOKENS ({usersWithTokens.length})
               </h2>
               {usersWithTokens.length === 0 ? (
-                <div className="text-center text-[#6B7280] py-6 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-[#E5E7EB]">Aucun client avec des tokens</div>
+                <div className="text-center text-[var(--text-secondary)] py-6 bg-[var(--card-bg)] rounded-2xl theme-shadow border border-[var(--border-color)]">Aucun client avec des tokens</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {usersWithTokens.map(user => renderUserCard(user, true))}
@@ -239,12 +239,12 @@ export default function Admin({ onExit }: AdminProps) {
 
           {(filterType === 'all' || filterType === 'no_tokens') && (
             <div>
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-[#E5E7EB] pb-2">
-                <span className="bg-red-500/20 text-red-400 w-8 h-8 rounded-xl active:scale-95 transition-transform flex items-center justify-center">2️⃣</span>
+              <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2 border-b border-[var(--border-color)] pb-2">
+                <span className="bg-[#EF4444]/20 text-[#EF4444] w-8 h-8 rounded-xl active:scale-95 transition-transform flex items-center justify-center">2️⃣</span>
                 USERS WITHOUT TOKENS ({usersWithoutTokens.length})
               </h2>
               {usersWithoutTokens.length === 0 ? (
-                <div className="text-center text-[#6B7280] py-6 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-[#E5E7EB]">Aucun client sans tokens</div>
+                <div className="text-center text-[var(--text-secondary)] py-6 bg-[var(--card-bg)] rounded-2xl theme-shadow border border-[var(--border-color)]">Aucun client sans tokens</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {usersWithoutTokens.map(user => renderUserCard(user, false))}
@@ -256,22 +256,22 @@ export default function Admin({ onExit }: AdminProps) {
       </div>
 
       {selectedUser && (
-        <div className="fixed inset-0 bg-[#0D0D0D]/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-6 w-full max-w-sm border border-[#E5E7EB]">
-            <h2 className="text-xl font-bold text-white mb-2">Envoyer des Tokens</h2>
-            <p className="text-[#9CA3AF] text-sm mb-6">Client: <span className="text-white font-bold">{selectedUser.phone}</span></p>
+        <div className="fixed inset-0 bg-[var(--header-bg)]/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[var(--card-bg)] rounded-2xl theme-shadow p-6 w-full max-w-sm border border-[var(--border-color)]">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Envoyer des Tokens</h2>
+            <p className="text-[var(--text-secondary)] text-sm mb-6">Client: <span className="text-[var(--text-primary)] font-bold">{selectedUser.phone}</span></p>
             
             <form onSubmit={handleSendTokens}>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Nombre de tokens</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Nombre de tokens</label>
                 <div className="relative">
-                  <Coins className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-500 w-5 h-5" />
+                  <Coins className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--btn-primary)] w-5 h-5" />
                   <input
                     type="number"
                     min="1"
                     value={tokenAmount}
                     onChange={(e) => setTokenAmount(e.target.value)}
-                    className="w-full bg-[#1F2937] border border-[#E5E7EB] rounded-xl active:scale-95 transition-transform py-3 pl-10 pr-4 text-white focus:outline-none focus:border-amber-500 text-lg font-bold"
+                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl active:scale-95 transition-transform py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-[var(--input-focus)] text-lg font-bold"
                     placeholder="Ex: 10"
                     autoFocus
                   />
@@ -284,14 +284,14 @@ export default function Admin({ onExit }: AdminProps) {
                     setSelectedUser(null);
                     setTokenAmount('');
                   }}
-                  className="flex-1 py-3 rounded-xl active:scale-95 transition-transform font-medium bg-gray-800 text-white hover:bg-gray-700 transition-colors"
+                  className="flex-1 py-3 rounded-xl active:scale-95 transition-transform font-medium bg-[var(--input-bg)] text-white hover:bg-[var(--border-color)] transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={!tokenAmount}
-                  className="flex-1 py-3 rounded-xl active:scale-95 transition-transform font-bold bg-amber-500 text-[#111827] hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 rounded-xl active:scale-95 transition-transform font-bold bg-[var(--btn-primary)] text-white hover:bg-[var(--btn-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ENVOYER
                 </button>

@@ -59,67 +59,67 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
   const res = genResult();
 
   return (
-    <div className="fixed inset-0 bg-[#0D0D0D]/80 flex items-center justify-center p-4 z-[60] overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] w-full max-w-2xl border border-[#E5E7EB] my-8 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-[var(--header-bg)]/80 flex items-center justify-center p-4 z-[60] overflow-y-auto">
+      <div className="bg-[var(--card-bg)] rounded-2xl theme-shadow w-full max-w-2xl border border-[var(--border-color)] my-8 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-3 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F9FAFB] sticky top-0 z-10 rounded-t-xl">
+        <div className="p-3 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--tab-bg)] sticky top-0 z-10 rounded-t-xl">
           <div className="flex items-center gap-2">
             <img src={league.logo} alt={league.name} className="w-5 h-5 object-contain" />
-            <h3 className="font-bold text-[#111827] text-sm">{league.name}</h3>
+            <h3 className="font-bold text-[var(--text-primary)] text-sm">{league.name}</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 text-[#6B7280] hover:text-[#111827] hover:bg-gray-100 rounded-xl active:scale-95 transition-transform transition-colors">
+          <button onClick={onClose} className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--tab-bg)] rounded-xl active:scale-95 transition-transform transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Match Info */}
-        <div className="p-4 bg-white border-b border-[#E5E7EB]">
+        <div className="p-4 bg-[var(--card-bg)] border-b border-[var(--border-color)]">
           <div className="flex justify-between items-center mb-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium bg-[#F9FAFB] px-2 py-1 rounded-full text-[#6B7280] border border-[#E5E7EB]">
-              <Clock className="w-3.5 h-3.5 text-[#FACC15]" />
+            <div className="flex items-center gap-1.5 text-[11px] font-medium bg-[var(--tab-bg)] px-2 py-1 rounded-full text-[var(--text-secondary)] border border-[var(--border-color)]">
+              <Clock className="w-3.5 h-3.5 text-[var(--btn-primary)]" />
               <span>{slot.time}</span>
             </div>
-            {slot.isPast && <span className="text-[11px] font-bold text-red-500 uppercase bg-red-50 px-2 py-1 rounded-full border border-red-100">Résultat Final</span>}
+            {slot.isPast && <span className="text-[11px] font-bold text-[#EF4444] uppercase bg-[#EF4444]/10 px-2 py-1 rounded-full border border-[#EF4444]/20">Résultat Final</span>}
             {isLive && <span className="text-[11px] font-bold text-[#22C55E] uppercase bg-[#22C55E]/10 px-2 py-1 rounded-full border border-[#22C55E]/20 animate-pulse">Match en cours</span>}
-            {isFuture && <span className="text-[11px] font-bold text-[#6B7280] uppercase bg-[#F9FAFB] px-2 py-1 rounded-full border border-[#E5E7EB]">Prédiction</span>}
+            {isFuture && <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase bg-[var(--tab-bg)] px-2 py-1 rounded-full border border-[var(--border-color)]">Prédiction</span>}
           </div>
 
           <div className="flex justify-between items-center">
             <div className="flex-1 flex flex-col items-center gap-2">
               <img src={getTeamLogo(homeTeam, league.id)} alt={homeTeam} className="w-12 h-12 object-contain drop-shadow-sm" />
-              <span className="font-bold text-[#111827] text-sm text-center leading-tight">{homeTeam}</span>
+              <span className="font-bold text-[var(--text-primary)] text-sm text-center leading-tight">{homeTeam}</span>
             </div>
             
             <div className="px-4 flex flex-col items-center justify-center">
               {isResult ? (
-                <div className="text-2xl font-black text-[#111827] tracking-widest bg-[#F9FAFB] px-4 py-2 rounded-xl border-2 border-[#E5E7EB] shadow-inner">
+                <div className="text-2xl font-black text-[var(--text-primary)] tracking-widest bg-[var(--tab-bg)] px-4 py-2 rounded-xl border-2 border-[var(--border-color)] shadow-inner">
                   {homeScore} - {awayScore}
                 </div>
               ) : (
-                <div className="text-[#9CA3AF] font-black text-xl bg-[#F9FAFB] px-3 py-1.5 rounded-xl border border-[#E5E7EB]">VS</div>
+                <div className="text-[var(--text-secondary)] font-black text-xl bg-[var(--tab-bg)] px-3 py-1.5 rounded-xl border border-[var(--border-color)]">VS</div>
               )}
             </div>
             
             <div className="flex-1 flex flex-col items-center gap-2">
               <img src={getTeamLogo(awayTeam, league.id)} alt={awayTeam} className="w-12 h-12 object-contain drop-shadow-sm" />
-              <span className="font-bold text-[#111827] text-sm text-center leading-tight">{awayTeam}</span>
+              <span className="font-bold text-[var(--text-primary)] text-sm text-center leading-tight">{awayTeam}</span>
             </div>
           </div>
         </div>
 
         {/* Betting Markets -> Replaced with Exact Format */}
-        <div className="p-4 overflow-y-auto flex-1 bg-[#F9FAFB]">
-          <div className="space-y-4 text-sm font-medium text-[#6B7280]">
+        <div className="p-4 overflow-y-auto flex-1 bg-[var(--tab-bg)]">
+          <div className="space-y-4 text-sm font-medium text-[var(--text-secondary)]">
             <div>
-              <span className="text-[#111827] font-semibold">Mi-temps 1X2:</span> {res.ht1x2}<br/>
-              👉 <span className="text-[#111827] font-semibold">Double Chance:</span> {res.dc}<br/>
-              👉 <span className="text-[#111827] font-semibold">Mi-temps DC:</span> {res.dcHt}<br/>
-              👉 <span className="text-[#111827] font-semibold">Score exact:</span> {res.exactScore}<br/>
-              👉 <span className="text-[#111827] font-semibold">Mi-temps Score:</span> {res.htScore}
+              <span className="text-[var(--text-primary)] font-semibold">Mi-temps 1X2:</span> {res.ht1x2}<br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Double Chance:</span> {res.dc}<br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Mi-temps DC:</span> {res.dcHt}<br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Score exact:</span> {res.exactScore}<br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Mi-temps Score:</span> {res.htScore}
             </div>
 
             <div>
-              👉 <span className="text-[#111827] font-semibold">Over/Under:</span><br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Over/Under:</span><br/>
               +0.5 {res.ou05 === '✔' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
               +1.5 {res.ou15 === '✔' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
               +2.5 {res.ou25 === '✔' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
@@ -127,21 +127,21 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
             </div>
 
             <div>
-              👉 <span className="text-[#111827] font-semibold">GG/NG:</span> {res.ggng}<br/>
-              👉 <span className="text-[#111827] font-semibold">Total buts:</span> {res.totalGoals}<br/>
-              👉 <span className="text-[#111827] font-semibold">HT/FT:</span> {res.htft}<br/>
-              👉 <span className="text-[#111827] font-semibold">Pair/Impair:</span> {res.oddEven}<br/>
-              👉 <span className="text-[#111827] font-semibold">First goal:</span> {res.firstGoalMin}
+              👉 <span className="text-[var(--text-primary)] font-semibold">GG/NG:</span> {res.ggng}<br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Total buts:</span> {res.totalGoals}<br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">HT/FT:</span> {res.htft}<br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Pair/Impair:</span> {res.oddEven}<br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">First goal:</span> {res.firstGoalMin}
             </div>
 
             <div>
-              👉 <span className="text-[#111827] font-semibold">Team domicile:</span><br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Team domicile:</span><br/>
               +1.5 {res.homeOu15 === '✔' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
               +2.5 {res.homeOu25 === '✔' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}
             </div>
 
             <div>
-              👉 <span className="text-[#111827] font-semibold">Team extérieur:</span><br/>
+              👉 <span className="text-[var(--text-primary)] font-semibold">Team extérieur:</span><br/>
               +0.5 {res.awayOu05 === '✔' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}<br/>
               +1.5 {res.awayOu15 === '✔' ? <span className="text-[#22C55E]">✔</span> : <span className="text-[#EF4444]">✖</span>}
             </div>
