@@ -7,14 +7,26 @@ import { useState, useEffect } from 'react';
 import Auth from './Auth';
 import MainApp from './components/MainApp';
 import Admin from './components/Admin';
+import SplashScreen from './components/SplashScreen';
 import { User } from './types';
 import { db } from './firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('currentUser');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isSplashDone, setIsSplashDone] = useState(false);
 
   useEffect(() => {
     // The app uses a custom authentication system (Auth.tsx) and stores users in Firestore.
@@ -78,6 +90,9 @@ export default function App() {
   }
 
   if (!currentUser) {
+    if (!isSplashDone) {
+      return <SplashScreen onComplete={() => setIsSplashDone(true)} />;
+    }
     return <Auth onLogin={handleLogin} onAdminAccess={() => setIsAdmin(true)} />;
   }
 
