@@ -120,13 +120,13 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
         <div className="p-6">
           <div className="flex mb-6 bg-[var(--input-bg)] rounded-xl active:scale-95 transition-transform p-1">
             <button 
-              className={`flex-1 py-2 rounded-md font-medium transition-colors ${isLogin ? 'bg-[var(--btn-primary)] text-white' : 'text-[var(--text-secondary)]'}`}
+              className={`flex-1 py-2 rounded-md font-medium transition-colors ${isLogin ? 'bg-[var(--btn-primary)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
               onClick={() => setIsLogin(true)}
             >
               Connexion
             </button>
             <button 
-              className={`flex-1 py-2 rounded-md font-medium transition-colors ${!isLogin ? 'bg-[var(--btn-primary)] text-white' : 'text-[var(--text-secondary)]'}`}
+              className={`flex-1 py-2 rounded-md font-medium transition-colors ${!isLogin ? 'bg-[var(--btn-primary)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
               onClick={() => setIsLogin(false)}
             >
               Inscription
@@ -167,7 +167,7 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
 
             <button 
               type="submit" 
-              className="w-full bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white font-bold py-3 rounded-xl active:scale-95 transition-transform transition-colors flex items-center justify-center gap-2 mt-6"
+              className="w-full bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-[var(--text-primary)] font-bold py-3 rounded-xl active:scale-95 transition-transform transition-colors flex items-center justify-center gap-2 mt-6"
             >
               {isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
               {isLogin ? 'Se connecter' : 'S\'inscrire'}
@@ -207,13 +207,13 @@ export default function Auth({ onLogin, onAdminAccess }: AuthProps) {
                 <button
                   type="button"
                   onClick={() => setShowAdminModal(false)}
-                  className="flex-1 py-2 rounded-xl active:scale-95 transition-transform font-medium bg-[var(--input-bg)] text-white hover:bg-[var(--border-color)] transition-colors"
+                  className="flex-1 py-2 rounded-xl active:scale-95 transition-transform font-medium bg-[var(--input-bg)] text-[var(--text-primary)] hover:bg-[var(--border-color)] transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-xl active:scale-95 transition-transform font-bold bg-[var(--btn-primary)] text-white hover:bg-[var(--btn-hover)] transition-colors"
+                  className="flex-1 py-2 rounded-xl active:scale-95 transition-transform font-bold bg-[var(--btn-primary)] text-[var(--text-primary)] hover:bg-[var(--btn-hover)] transition-colors"
                 >
                   Valider
                 </button>

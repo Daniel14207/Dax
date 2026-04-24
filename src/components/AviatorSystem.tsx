@@ -19,8 +19,8 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
     return (
       <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-6 text-center">
         <ShieldCheck className="w-12 h-12 text-[#EF4444] mx-auto mb-4" />
-        <h3 className="text-lg font-bold text-red-700 mb-2">Accès Refusé</h3>
-        <p className="text-red-600 font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
+        <h3 className="text-lg font-bold text-[#B91C1C] mb-2">Accès Refusé</h3>
+        <p className="text-[#DC2626] font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
       </div>
     );
   }
@@ -131,7 +131,7 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
     if (multiplier >= 1.00 && multiplier <= 1.99) return 'text-blue-500';
     if (multiplier >= 2.00 && multiplier <= 4.99) return 'text-purple-500';
     if (multiplier >= 5.00 && multiplier <= 49.99) return 'text-[#EF4444]';
-    if (multiplier >= 50) return 'text-green-500';
+    if (multiplier >= 50) return 'text-[#22C55E]';
     return 'text-[#D1D5DB]';
   };
 
@@ -178,7 +178,7 @@ export default function AviatorSystem({ userTokens, onAnalyze, isVip = false }: 
           className={`w-full font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
             userTokens < 500 
               ? 'bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444]' 
-              : 'bg-[#EF4444] hover:bg-red-600 text-white shadow-sm'
+              : 'bg-[#EF4444] hover:bg-[#DC2626] text-[var(--text-primary)] shadow-sm'
           }`}
         >
           {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens < 500 ? null : <Search className="w-5 h-5" />}

@@ -6,7 +6,8 @@ export interface VirtualTimeState {
   cycleIndex: number;
   msInCycle: number;
   showResult: boolean;
-  slots: { time: string; isPast: boolean; isCurrent: boolean; isFuture: boolean; cycleOffset: number; showResult: boolean; matchTime: Date }[];
+  slots: { time: string; isPast: boolean; isCurrent: boolean; isFuture: boolean; cycleOffset: number; showResult: boolean; matchTime: Date; matchMinute?: number; remainingSeconds?: number }[];
+  isPaused: boolean;
 }
 
 export function useVirtualTime() {
@@ -15,50 +16,75 @@ export function useVirtualTime() {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const liveTime = new Date(now.getTime() + 2 * 60000); // device_time + 2 minutes
+      // Total cycle = 100 seconds
+      const CYCLE_DURATION = 100 * 1000;
       
-      const CYCLE_DURATION = 120000; // 2 minutes
-      const RESULT_DELAY = 30000; // 30 seconds
+      const currentTimeMs = now.getTime();
+      const msInCycle = currentTimeMs % CYCLE_DURATION;
+      const cycleIndex = Math.floor(currentTimeMs / CYCLE_DURATION);
       
-      const cycleIndex = Math.floor(liveTime.getTime() / CYCLE_DURATION);
-      const msInCycle = liveTime.getTime() % CYCLE_DURATION;
+      // Phase 1: LIVE MATCH (0 to 29 seconds)
+      const isLivePhase = msInCycle < 30000;
       
-      const showResult = msInCycle >= RESULT_DELAY;
+      // Phase 2: BETTING (ODDS) (30 to 100 seconds)
+      const isBettingPhase = msInCycle >= 30000;
       
+      // At 27-29 seconds -> FREEZE RESULT
+      const showResult = isLivePhase && msInCycle >= 27000;
+      
+      // Animate time progression 0' -> 90'
+      const matchMinute = isLivePhase ? Math.min(90, Math.floor((msInCycle / 27000) * 90)) : undefined;
+      
+      // Countdown for betting phase
+      const remainingSeconds = Math.ceil((100000 - msInCycle) / 1000);
+
+      const cycleStartTime = cycleIndex * CYCLE_DURATION;
       const slots = [];
-      // Generate slots: past 20, current, future 10
-      for (let i = -20; i <= 10; i++) {
-        const slotCycle = cycleIndex + i;
-        const slotRealTimeStart = slotCycle * CYCLE_DURATION;
+      
+      // Generate slots: 5 past, current, 15 future
+      for (let i = -5; i <= 15; i++) {
+        const slotRealTimeStart = cycleStartTime + i * CYCLE_DURATION;
         const slotMatchTime = new Date(slotRealTimeStart);
         
         const slotH = slotMatchTime.getHours();
         const slotM = slotMatchTime.getMinutes();
         const timeStr = `${slotH.toString().padStart(2, '0')}:${slotM.toString().padStart(2, '0')}`;
         
+        const isPast = i < 0;
+        const isCurrentSlot = i === 0;
+        const isFutureSlot = i > 0;
+
         slots.push({
           time: timeStr,
-          isPast: i < 0,
-          isCurrent: i === 0,
-          isFuture: i > 0,
+          isPast,
+          // Only truly "current/Live" if it's slot 0 and we're in live phase
+          isCurrent: isCurrentSlot && isLivePhase,
+          // It's in the "future/betting" state if it's a future slot natively, OR if it's the current slot but in the betting phase
+          isFuture: isFutureSlot || (isCurrentSlot && isBettingPhase),
           cycleOffset: i,
-          showResult: i < 0 || (i === 0 && showResult),
-          matchTime: slotMatchTime
+          showResult: isPast || (isCurrentSlot && showResult),
+          matchTime: slotMatchTime,
+          matchMinute: isCurrentSlot ? matchMinute : undefined,
+          // Add remainingSeconds only to the slot that currently holds the countdown (slot 0 in betting phase)
+          // Actually, let's just supply the countdown timer to the CURRENT slot if it's in betting phase
+          remainingSeconds: (isCurrentSlot && isBettingPhase) ? remainingSeconds : undefined
         });
       }
 
       setState({
         currentTime: now,
-        liveTime,
+        liveTime: now,
         cycleIndex,
         msInCycle,
         showResult,
-        slots
+        slots,
+        isPaused: false
       });
     };
 
     updateTime();
-    const interval = setInterval(updateTime, 1000);
+    // Update every 100ms or so for smooth matchMinute progression
+    const interval = setInterval(updateTime, 100); 
     return () => clearInterval(interval);
   }, []);
 

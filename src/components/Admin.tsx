@@ -131,8 +131,8 @@ export default function Admin({ onExit }: AdminProps) {
           }}
           className={`px-4 py-2 rounded-xl active:scale-95 transition-transform font-bold transition-colors text-sm ${
             hasTokens 
-              ? 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white' 
-              : 'bg-[var(--input-bg)] hover:bg-[var(--border-color)] text-white'
+              ? 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-[var(--text-primary)]' 
+              : 'bg-[var(--input-bg)] hover:bg-[var(--border-color)] text-[var(--text-primary)]'
           }`}
         >
           ENVOYER TOKENS
@@ -185,7 +185,7 @@ export default function Admin({ onExit }: AdminProps) {
             <div className="flex bg-[var(--card-bg)] rounded-2xl theme-shadow p-1 border border-[var(--border-color)]">
               <button 
                 onClick={() => setFilterType('all')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'all' ? 'bg-[var(--input-bg)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === 'all' ? 'bg-[var(--input-bg)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 ALL
               </button>
@@ -206,13 +206,13 @@ export default function Admin({ onExit }: AdminProps) {
             <div className="flex bg-[var(--card-bg)] rounded-2xl theme-shadow p-1 border border-[var(--border-color)] ml-auto">
               <button 
                 onClick={() => setSortBy('tokens')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'tokens' ? 'bg-[var(--input-bg)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'tokens' ? 'bg-[var(--input-bg)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 <TrendingUp className="w-4 h-4" /> Tokens
               </button>
               <button 
                 onClick={() => setSortBy('date')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'date' ? 'bg-[var(--input-bg)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors ${sortBy === 'date' ? 'bg-[var(--input-bg)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 <Calendar className="w-4 h-4" /> Date
               </button>
@@ -284,14 +284,14 @@ export default function Admin({ onExit }: AdminProps) {
                     setSelectedUser(null);
                     setTokenAmount('');
                   }}
-                  className="flex-1 py-3 rounded-xl active:scale-95 transition-transform font-medium bg-[var(--input-bg)] text-white hover:bg-[var(--border-color)] transition-colors"
+                  className="flex-1 py-3 rounded-xl active:scale-95 transition-transform font-medium bg-[var(--input-bg)] text-[var(--text-primary)] hover:bg-[var(--border-color)] transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={!tokenAmount}
-                  className="flex-1 py-3 rounded-xl active:scale-95 transition-transform font-bold bg-[var(--btn-primary)] text-white hover:bg-[var(--btn-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 rounded-xl active:scale-95 transition-transform font-bold bg-[var(--btn-primary)] text-[var(--text-primary)] hover:bg-[var(--btn-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ENVOYER
                 </button>

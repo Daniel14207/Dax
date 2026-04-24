@@ -80,8 +80,16 @@ export function MatchDetailsModal({ match, onClose }: MatchDetailsModalProps) {
               <span>{slot.time}</span>
             </div>
             {slot.isPast && <span className="text-[11px] font-bold text-[#EF4444] uppercase bg-[#EF4444]/10 px-2 py-1 rounded-full border border-[#EF4444]/20">Résultat Final</span>}
-            {isLive && <span className="text-[11px] font-bold text-[#22C55E] uppercase bg-[#22C55E]/10 px-2 py-1 rounded-full border border-[#22C55E]/20 animate-pulse">Match en cours</span>}
-            {isFuture && <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase bg-[var(--tab-bg)] px-2 py-1 rounded-full border border-[var(--border-color)]">Prédiction</span>}
+            {isLive && <span className="text-[11px] font-bold text-[#22C55E] uppercase bg-[#22C55E]/10 px-2 py-1 rounded-full border border-[#22C55E]/20 animate-pulse">Match en cours {slot.matchMinute !== undefined ? `${slot.matchMinute}'` : ''}</span>}
+            {isFuture && slot.remainingSeconds !== undefined && (
+              <span className="text-[11px] font-black text-[#F59E0B] uppercase bg-[#F59E0B]/10 px-2 py-1 rounded-full border border-[#F59E0B]/30 tracking-widest flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {Math.floor(slot.remainingSeconds / 60).toString().padStart(2, '0')}:{(slot.remainingSeconds % 60).toString().padStart(2, '0')}
+              </span>
+            )}
+            {isFuture && slot.remainingSeconds === undefined && (
+              <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase bg-[var(--tab-bg)] px-2 py-1 rounded-full border border-[var(--border-color)]">Prédiction</span>
+            )}
           </div>
 
           <div className="flex justify-between items-center">

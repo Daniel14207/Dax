@@ -191,14 +191,14 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
         {error && (
           <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-3 mb-4 flex items-start gap-2">
             <AlertCircle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-[#DC2626]">{error}</p>
           </div>
         )}
 
         <button 
           onClick={generateTickets}
           disabled={isGenerating}
-          className="w-full bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2"
+          className="w-full bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--text-primary)] font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2"
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
           {isGenerating ? 'Analyse en cours...' : 'Générer (500 Tokens)'}
@@ -231,7 +231,7 @@ export function MultipleGenerator({ userTokens = 0, onAnalyze, isVip = false }: 
                   {ticket.matches.map((match, idx) => (
                     <div key={idx} className="p-4 hover:bg-[var(--tab-bg)] transition-colors flex justify-between items-center">
                       <div className="font-medium text-[var(--text-primary)]">{match.home} <span className="text-[var(--text-secondary)] mx-1">vs</span> {match.away}</div>
-                      <span className="font-bold text-white bg-[var(--btn-primary)] px-3 py-1 rounded-lg shadow-sm">{match.pick}</span>
+                      <span className="font-bold text-[var(--text-primary)] bg-[var(--btn-primary)] px-3 py-1 rounded-lg shadow-sm">{match.pick}</span>
                     </div>
                   ))}
                 </div>

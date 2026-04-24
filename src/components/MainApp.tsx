@@ -116,12 +116,17 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             <div 
               key={i}
               className={`px-3 py-1.5 rounded-xl active:scale-95 transition-transform text-xs font-medium flex flex-col items-center min-w-[60px] ${
-                slot.isCurrent ? 'bg-[var(--btn-primary)] text-white shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 
+                slot.isCurrent ? 'bg-[var(--btn-primary)] text-[var(--text-primary)] shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 
                 slot.isPast ? 'bg-[var(--tab-bg)] text-[var(--text-secondary)]' : 'bg-[var(--tab-bg)] text-[var(--text-secondary)]'
               }`}
             >
               <span>{slot.time}</span>
-              {slot.isCurrent && <span className="text-[9px] uppercase font-bold mt-0.5 animate-pulse">Live</span>}
+              {slot.isCurrent && <span className="text-[9px] uppercase font-bold mt-0.5 animate-pulse">Live {slot.matchMinute !== undefined ? `${slot.matchMinute}'` : ''}</span>}
+              {slot.isFuture && slot.remainingSeconds !== undefined && (
+                <span className="text-[9px] font-black tracking-widest mt-0.5">
+                  {Math.floor(slot.remainingSeconds / 60).toString().padStart(2, '0')}:{(slot.remainingSeconds % 60).toString().padStart(2, '0')}
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -193,101 +198,127 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               <h3 className="font-bold text-[var(--text-primary)] text-sm">{league.name}</h3>
             </div>
             
-            <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-              {virtualTime.slots.map((slot, slotIndex) => {
+            <div className="divide-y border-t border-[var(--border-color)] border-[var(--border-color)] max-h-[600px] overflow-y-auto">
+              {virtualTime.slots.flatMap((slot, slotIndex) => {
                 const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
-                if (teamNames.length === 0) return null;
+                if (teamNames.length < 2) return [];
 
                 // Use absolute slotCycle to ensure teams and scores are stable for a given time
                 const slotCycle = virtualTime.cycleIndex + slot.cycleOffset;
-                const homeIdx = Math.abs(slotCycle * 3 + 10) % teamNames.length;
-                const awayIdx = Math.abs(slotCycle * 5 + 1) % teamNames.length;
-                const finalAwayIdx = homeIdx === awayIdx ? Math.abs(slotCycle * 7 + 2) % teamNames.length : awayIdx;
                 
-                const homeTeam = teamNames[homeIdx];
-                const awayTeam = teamNames[finalAwayIdx];
+                // Determinist shuffling of teams based on slotCycle
+                const shuffledTeams = [...teamNames].sort((a, b) => {
+                  const valA = Math.abs(Math.sin(slotCycle * a.charCodeAt(0) + a.length));
+                  const valB = Math.abs(Math.sin(slotCycle * b.charCodeAt(0) + b.length));
+                  return valA - valB;
+                });
                 
-                const isResult = slot.showResult;
-                const isLive = slot.isCurrent;
-                const isFuture = slot.isFuture;
-                const odds = generateOdds(league.id, homeTeam, awayTeam, slotCycle);
+                const matchesInSlot = [];
+                for(let i = 0; i < shuffledTeams.length - 1; i += 2) {
+                  matchesInSlot.push({
+                    homeTeam: shuffledTeams[i],
+                    awayTeam: shuffledTeams[i+1],
+                    matchSeedOffset: i
+                  });
+                }
                 
-                // Deterministic score based on slotCycle and teams
-                const scoreSeed = Math.abs(slotCycle * homeTeam.length * awayTeam.length);
-                const homeScore = scoreSeed % 4;
-                const awayScore = (scoreSeed / 2) % 4 | 0;
-                
-                const confidence = 65 + (scoreSeed % 30); // 65% to 94%
-                const isHotMatch = scoreSeed % 5 === 0; // 20% chance
-                
-                return (
-                  <div 
-                    key={slotIndex} 
-                    className={`p-2 hover:bg-[var(--tab-bg)] transition-colors cursor-pointer relative overflow-hidden ${isHotMatch ? 'border-l-2 border-[#eab308]' : ''}`}
-                    onClick={() => setSelectedMatch({
-                      league, homeTeam, awayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed
-                    })}
-                  >
-                    {isHotMatch && (
-                      <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-sm flex items-center gap-1">
-                        <Flame className="w-2.5 h-2.5" /> HOT
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center mb-1.5">
-                      <div className="flex items-center gap-1 text-[10px] font-medium bg-[var(--tab-bg)] px-1.5 py-0.5 rounded text-[var(--text-secondary)]">
-                        <Clock className="w-2.5 h-2.5 text-[var(--btn-primary)]" />
-                        <span>{slot.time}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {isFuture && (
-                          <span className="text-[9px] font-bold text-[var(--text-secondary)] bg-[var(--tab-bg)] px-1.5 py-0.5 rounded border border-[var(--border-color)]">
-                            Confiance: <span className={confidence > 85 ? 'text-[var(--btn-primary)]' : 'text-[var(--btn-primary)]'}>{confidence}%</span>
-                          </span>
-                        )}
-                        {slot.isPast && <span className="text-[9px] font-bold text-[#EF4444] uppercase bg-[#EF4444]/10 px-1.5 py-0.5 rounded">Résultat</span>}
-                        {isLive && <span className="text-[9px] font-bold text-[var(--btn-primary)] uppercase bg-[var(--btn-primary)]/10 px-1.5 py-0.5 rounded animate-pulse">Live</span>}
-                        {isFuture && <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase bg-[var(--tab-bg)] px-1.5 py-0.5 rounded">Prédiction</span>}
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1 flex flex-col items-center gap-1">
-                        <img src={getTeamLogo(homeTeam, league.id)} alt={homeTeam} className="w-5 h-5 object-contain" />
-                        <span className="font-bold text-[var(--text-primary)] text-[11px] text-center leading-tight truncate w-full px-1">{homeTeam}</span>
+                return matchesInSlot.map(({homeTeam, awayTeam, matchSeedOffset}, matchIdx) => {
+                  const isLive = slot.isCurrent;
+                  const isResult = isLive || slot.showResult;
+                  const isFuture = slot.isFuture;
+                  const odds = generateOdds(league.id, homeTeam, awayTeam, slotCycle + matchSeedOffset);
+                  
+                  // Deterministic score based on slotCycle and teams
+                  const scoreSeed = Math.abs((slotCycle + matchSeedOffset + 1) * homeTeam.length * awayTeam.length);
+                  const finalHomeScore = scoreSeed % 4 + (scoreSeed % 10 > 8 ? 1 : 0); // slight variance
+                  const finalAwayScore = ((scoreSeed / 2) % 4 | 0) + (scoreSeed % 8 > 6 ? 1 : 0);
+                  
+                  const matchProgress = slot.matchMinute !== undefined ? Math.min(1, slot.matchMinute / 90) : 1;
+                  const homeScore = isLive && slot.matchMinute !== undefined && slot.matchMinute < 90 ?
+                    Math.floor(finalHomeScore * matchProgress) : finalHomeScore;
+                  const awayScore = isLive && slot.matchMinute !== undefined && slot.matchMinute < 90 ?
+                    Math.floor(finalAwayScore * matchProgress) : finalAwayScore;
+                  
+                  const confidence = 65 + (scoreSeed % 30); // 65% to 94%
+                  const isHotMatch = scoreSeed % 5 === 0; // 20% chance
+                  
+                  return (
+                    <div 
+                      key={`${slotIndex}-${matchIdx}`} 
+                      className={`p-2 hover:bg-[var(--tab-bg)] transition-colors cursor-pointer relative overflow-hidden border-b border-[var(--border-color)] last:border-b-0 ${isHotMatch ? 'border-l-2 border-[#eab308]' : ''}`}
+                      onClick={() => setSelectedMatch({
+                        league, homeTeam, awayTeam, homeScore, awayScore, isResult, isLive, isFuture, odds, slot, scoreSeed
+                      })}
+                    >
+                      {isHotMatch && (
+                        <div className="absolute top-0 right-0 bg-gradient-to-r from-[#F59E0B] to-[#F97316] text-[var(--text-primary)] text-[9px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-sm flex items-center gap-1 z-10">
+                          <Flame className="w-2.5 h-2.5" /> HOT
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center mb-1.5">
+                        <div className="flex items-center gap-1 text-[10px] font-medium bg-[var(--tab-bg)] px-1.5 py-0.5 rounded text-[var(--text-secondary)]">
+                          <Clock className="w-2.5 h-2.5 text-[var(--btn-primary)]" />
+                          <span>{slot.time}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {isFuture && (
+                            <span className="text-[9px] font-bold text-[var(--text-secondary)] bg-[var(--tab-bg)] px-1.5 py-0.5 rounded border border-[var(--border-color)]">
+                              Confiance: <span className={confidence > 85 ? 'text-[var(--btn-primary)]' : 'text-[var(--btn-primary)]'}>{confidence}%</span>
+                            </span>
+                          )}
+                          {slot.isPast && <span className="text-[9px] font-bold text-[#EF4444] uppercase bg-[#EF4444]/10 px-1.5 py-0.5 rounded border border-[#EF4444]/20">Résultat</span>}
+                          {isLive && <span className="text-[9px] font-bold text-[var(--btn-primary)] uppercase bg-[var(--btn-primary)]/10 px-1.5 py-0.5 rounded animate-pulse border border-[var(--btn-primary)]/20">Live {slot.matchMinute !== undefined ? `${slot.matchMinute}'` : ''}</span>}
+                          {isFuture && slot.remainingSeconds !== undefined && (
+                            <span className="text-[10px] font-black text-[#F59E0B] bg-[#F59E0B]/10 px-2 py-0.5 rounded border border-[#F59E0B]/30 tracking-widest flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              {Math.floor(slot.remainingSeconds / 60).toString().padStart(2, '0')}:{(slot.remainingSeconds % 60).toString().padStart(2, '0')}
+                            </span>
+                          )}
+                          {isFuture && slot.remainingSeconds === undefined && (
+                            <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase bg-[var(--tab-bg)] px-1.5 py-0.5 rounded border border-[var(--border-color)]">Prédiction</span>
+                          )}
+                        </div>
                       </div>
                       
-                      <div className="px-2 flex flex-col items-center justify-center">
-                        {isResult ? (
-                          <div className="text-sm font-black text-[var(--text-primary)] tracking-widest bg-[var(--tab-bg)] px-2 py-0.5 rounded border border-[var(--border-color)]">
-                            {homeScore} - {awayScore}
-                          </div>
-                        ) : (
-                          <div className="text-[var(--text-secondary)] font-bold text-[10px] bg-[var(--tab-bg)] px-1.5 py-0.5 rounded-full">VS</div>
-                        )}
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1 flex flex-col items-center gap-1">
+                          <img src={getTeamLogo(homeTeam, league.id)} alt={homeTeam} className="w-5 h-5 object-contain" />
+                          <span className="font-bold text-[var(--text-primary)] text-[11px] text-center leading-tight truncate w-full px-1">{homeTeam}</span>
+                        </div>
+                        
+                        <div className="px-2 flex flex-col items-center justify-center">
+                          {isResult ? (
+                            <div className="text-sm font-black text-[var(--text-primary)] tracking-widest bg-[var(--tab-bg)] px-2 py-0.5 rounded border border-[var(--border-color)] shadow-sm">
+                              {homeScore} - {awayScore}
+                            </div>
+                          ) : (
+                            <div className="text-[var(--text-secondary)] font-bold text-[10px] bg-[var(--tab-bg)] px-1.5 py-0.5 rounded-full border border-[var(--border-color)]">VS</div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 flex flex-col items-center gap-1">
+                          <img src={getTeamLogo(awayTeam, league.id)} alt={awayTeam} className="w-5 h-5 object-contain" />
+                          <span className="font-bold text-[var(--text-primary)] text-[11px] text-center leading-tight truncate w-full px-1">{awayTeam}</span>
+                        </div>
                       </div>
                       
-                      <div className="flex-1 flex flex-col items-center gap-1">
-                        <img src={getTeamLogo(awayTeam, league.id)} alt={awayTeam} className="w-5 h-5 object-contain" />
-                        <span className="font-bold text-[var(--text-primary)] text-[11px] text-center leading-tight truncate w-full px-1">{awayTeam}</span>
+                      <div className="mt-1.5 grid grid-cols-3 gap-1">
+                        <div className="bg-[var(--tab-bg)] rounded p-1 flex flex-col items-center border border-[var(--border-color)] hover:border-[var(--input-focus)] transition-colors group">
+                          <span className="text-[9px] text-[var(--text-secondary)] mb-0.5 group-hover:text-[var(--btn-primary)] transition-colors">1</span>
+                          <span className="font-bold text-[var(--btn-primary)] text-xs">{odds.home.toFixed(2)}</span>
+                        </div>
+                        <div className="bg-[var(--tab-bg)] rounded p-1 flex flex-col items-center border border-[var(--border-color)] hover:border-[var(--input-focus)] transition-colors group">
+                          <span className="text-[9px] text-[var(--text-secondary)] mb-0.5 group-hover:text-[var(--btn-primary)] transition-colors">X</span>
+                          <span className="font-bold text-[var(--btn-primary)] text-xs">{odds.draw.toFixed(2)}</span>
+                        </div>
+                        <div className="bg-[var(--tab-bg)] rounded p-1 flex flex-col items-center border border-[var(--border-color)] hover:border-[var(--input-focus)] transition-colors group">
+                          <span className="text-[9px] text-[var(--text-secondary)] mb-0.5 group-hover:text-[var(--btn-primary)] transition-colors">2</span>
+                          <span className="font-bold text-[var(--btn-primary)] text-xs">{odds.away.toFixed(2)}</span>
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="mt-1.5 grid grid-cols-3 gap-1">
-                      <div className="bg-[var(--tab-bg)] rounded p-1 flex flex-col items-center border border-[var(--border-color)] hover:border-[var(--input-focus)] transition-colors">
-                        <span className="text-[9px] text-[var(--text-secondary)] mb-0.5">1</span>
-                        <span className="font-bold text-[var(--btn-primary)] text-xs">{odds.home.toFixed(2)}</span>
-                      </div>
-                      <div className="bg-[var(--tab-bg)] rounded p-1 flex flex-col items-center border border-[var(--border-color)] hover:border-[var(--input-focus)] transition-colors">
-                        <span className="text-[9px] text-[var(--text-secondary)] mb-0.5">X</span>
-                        <span className="font-bold text-[var(--btn-primary)] text-xs">{odds.draw.toFixed(2)}</span>
-                      </div>
-                      <div className="bg-[var(--tab-bg)] rounded p-1 flex flex-col items-center border border-[var(--border-color)] hover:border-[var(--input-focus)] transition-colors">
-                        <span className="text-[9px] text-[var(--text-secondary)] mb-0.5">2</span>
-                        <span className="font-bold text-[var(--btn-primary)] text-xs">{odds.away.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
+                  );
+                });
               })}
             </div>
           </div>
@@ -303,7 +334,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
     const pastResults: any[] = [];
     for (let i = 1; i <= 50; i++) {
       const slotCycle = virtualTime.cycleIndex - i;
-      const slotRealTimeStart = slotCycle * 120000;
+      const slotRealTimeStart = slotCycle * 100000;
       const slotMatchTime = new Date(slotRealTimeStart);
       
       const slotH = slotMatchTime.getHours();
@@ -312,28 +343,39 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       
       LEAGUES.forEach(league => {
         const teamNames = TEAMS_BY_LEAGUE[league.id] || [];
-        if (teamNames.length === 0) return;
+        if (teamNames.length < 2) return;
 
-        const homeIdx = Math.abs(slotCycle * 3 + 10) % teamNames.length;
-        const awayIdx = Math.abs(slotCycle * 5 + 1) % teamNames.length;
-        const finalAwayIdx = homeIdx === awayIdx ? Math.abs(slotCycle * 7 + 2) % teamNames.length : awayIdx;
+        // Determinist shuffling of teams based on slotCycle
+        const shuffledTeams = [...teamNames].sort((a, b) => {
+          const valA = Math.abs(Math.sin(slotCycle * a.charCodeAt(0) + a.length));
+          const valB = Math.abs(Math.sin(slotCycle * b.charCodeAt(0) + b.length));
+          return valA - valB;
+        });
+
+        const matchesInSlot = [];
+        for(let j = 0; j < shuffledTeams.length - 1; j += 2) {
+          matchesInSlot.push({
+            homeTeam: shuffledTeams[j],
+            awayTeam: shuffledTeams[j+1],
+            matchSeedOffset: j
+          });
+        }
         
-        const homeTeam = teamNames[homeIdx];
-        const awayTeam = teamNames[finalAwayIdx];
-        
-        const scoreSeed = Math.abs(slotCycle * homeTeam.length * awayTeam.length);
-        const homeScore = scoreSeed % 4;
-        const awayScore = (scoreSeed / 2) % 4 | 0;
-        
-        pastResults.push({
-          date: slotMatchTime.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-          time: timeStr,
-          matchTime: slotMatchTime,
-          league,
-          homeTeam,
-          awayTeam,
-          homeScore,
-          awayScore
+        matchesInSlot.forEach(({homeTeam, awayTeam, matchSeedOffset}) => {
+          const scoreSeed = Math.abs((slotCycle + matchSeedOffset + 1) * homeTeam.length * awayTeam.length);
+          const homeScore = scoreSeed % 4 + (scoreSeed % 10 > 8 ? 1 : 0);
+          const awayScore = ((scoreSeed / 2) % 4 | 0) + (scoreSeed % 8 > 6 ? 1 : 0);
+          
+          pastResults.push({
+            date: slotMatchTime.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+            time: timeStr,
+            matchTime: slotMatchTime,
+            league,
+            homeTeam,
+            awayTeam,
+            homeScore,
+            awayScore
+          });
         });
       });
     }
@@ -355,7 +397,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             
             <div className="flex-1 flex items-center justify-center gap-3 px-2">
               <span className="text-xs font-bold text-[var(--text-primary)] text-right flex-1 truncate">{result.homeTeam}</span>
-              <div className="bg-[#111827] text-white font-black text-sm px-2 py-0.5 rounded tracking-widest">
+              <div className="bg-[#111827] text-[var(--text-primary)] font-black text-sm px-2 py-0.5 rounded tracking-widest">
                 {result.homeScore} - {result.awayScore}
               </div>
               <span className="text-xs font-bold text-[var(--text-primary)] text-left flex-1 truncate">{result.awayTeam}</span>
@@ -391,7 +433,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 onClick={() => setVirtuelTab(tab.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl active:scale-95 transition-transform text-[11px] font-bold uppercase transition-colors ${
                   virtuelTab === tab.id 
-                    ? 'bg-[var(--btn-primary)] text-white' 
+                    ? 'bg-[var(--btn-primary)] text-[var(--text-primary)]' 
                     : 'bg-[var(--tab-bg)] text-[var(--text-secondary)] hover:bg-[var(--border-color)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -427,7 +469,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 onClick={() => setAviatorTab(tab.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl active:scale-95 transition-transform text-[11px] font-bold uppercase transition-colors ${
                   aviatorTab === tab.id 
-                    ? 'bg-[#EF4444] text-white' 
+                    ? 'bg-[#EF4444] text-[var(--text-primary)]' 
                     : 'bg-[var(--tab-bg)] text-[var(--text-secondary)] hover:bg-[var(--border-color)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -446,19 +488,19 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
       {/* Header */}
       <header className="bg-[var(--header-bg)] flex items-center justify-between p-3 sticky top-0 z-20 shadow-md h-[60px]">
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowMenu(true)} className="p-1.5 bg-[var(--btn-primary)] text-white rounded-xl active:scale-95 transition-transform">
+          <button onClick={() => setShowMenu(true)} className="p-1.5 bg-[var(--btn-primary)] text-[var(--text-primary)] rounded-xl active:scale-95 transition-transform">
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold text-white">Betting Tips</h1>
+          <h1 className="text-lg font-bold text-[var(--text-primary)]">Betting Tips</h1>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 bg-[var(--input-bg)] px-2.5 py-1 rounded-full border border-[var(--border-color)]">
             <Coins className="w-3.5 h-3.5 text-[var(--btn-primary)]" />
-            <span className="font-bold text-white text-sm">{user.tokens}</span>
+            <span className="font-bold text-[var(--text-primary)] text-sm">{user.tokens}</span>
           </div>
           <button onClick={() => setShowCart(true)} className="relative p-1.5 hover:bg-[var(--input-bg)] rounded-full transition-colors">
             <ShoppingCart className="w-5 h-5 text-[var(--btn-primary)]" />
-            <span className="absolute top-0 right-0 bg-[#EF4444] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
+            <span className="absolute top-0 right-0 bg-[#EF4444] text-[var(--text-primary)] text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
               +
             </span>
           </button>
@@ -478,7 +520,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
               <button onClick={() => setShowMenu(false)} className="absolute top-4 right-4 p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                 <X className="w-5 h-5" />
               </button>
-              <div className="w-16 h-16 bg-[var(--btn-primary)] rounded-full flex items-center justify-center mb-4 text-2xl font-bold text-white shadow-lg">
+              <div className="w-16 h-16 bg-[var(--btn-primary)] rounded-full flex items-center justify-center mb-4 text-2xl font-bold text-[var(--text-primary)] shadow-lg">
                 {user.phone.substring(0, 2)}
               </div>
               <div className="font-bold text-[var(--text-primary)] text-lg">{user.phone}</div>
@@ -568,7 +610,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-xl active:scale-95 transition-transform font-bold bg-[var(--btn-primary)] text-white hover:bg-[var(--btn-hover)] transition-colors"
+                  className="flex-1 py-2 rounded-xl active:scale-95 transition-transform font-bold bg-[var(--btn-primary)] text-[var(--text-primary)] hover:bg-[var(--btn-hover)] transition-colors"
                 >
                   Valider
                 </button>
@@ -598,22 +640,22 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                   <div className="font-bold text-[var(--text-primary)] text-lg">5 000 Ar</div>
                   <div className="text-sm text-[var(--text-secondary)]">Validité: 3.5 jours</div>
                 </div>
-                <button className="bg-[var(--btn-primary)] text-white font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform">Acheter</button>
+                <button className="bg-[var(--btn-primary)] text-[var(--text-primary)] font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform">Acheter</button>
               </div>
               <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-between hover:border-[var(--input-focus)] transition-colors cursor-pointer shadow-sm" onClick={() => handleBuyTokens(10000, '7 jours')}>
                 <div>
                   <div className="font-bold text-[var(--text-primary)] text-lg">10 000 Ar</div>
                   <div className="text-sm text-[var(--text-secondary)]">Validité: 7 jours</div>
                 </div>
-                <button className="bg-[var(--btn-primary)] text-white font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform">Acheter</button>
+                <button className="bg-[var(--btn-primary)] text-[var(--text-primary)] font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform">Acheter</button>
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between hover:border-amber-400 transition-colors cursor-pointer relative overflow-hidden shadow-sm" onClick={() => handleBuyTokens(40000, '30 jours')}>
-                <div className="absolute top-0 right-0 bg-[var(--btn-primary)] text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">POPULAIRE</div>
+              <div className="bg-[var(--btn-primary)]/10 border border-[var(--btn-primary)]/30 rounded-xl p-4 flex items-center justify-between hover:border-[var(--btn-primary)] transition-colors cursor-pointer relative overflow-hidden shadow-sm" onClick={() => handleBuyTokens(40000, '30 jours')}>
+                <div className="absolute top-0 right-0 bg-[var(--btn-primary)] text-[var(--text-primary)] text-[10px] font-bold px-2 py-1 rounded-bl-lg">POPULAIRE</div>
                 <div>
-                  <div className="font-bold text-amber-600 text-lg">40 000 Ar</div>
-                  <div className="text-sm text-amber-700">Validité: 30 jours (VIP)</div>
+                  <div className="font-bold text-[var(--btn-primary)] text-lg">40 000 Ar</div>
+                  <div className="text-sm text-[var(--text-secondary)]">Validité: 30 jours (VIP)</div>
                 </div>
-                <button className="bg-[var(--btn-primary)] text-white font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform shadow-md">Acheter</button>
+                <button className="bg-[var(--btn-primary)] text-[var(--text-primary)] font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform shadow-md">Acheter</button>
               </div>
             </div>
           </div>
@@ -674,8 +716,8 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 {user.tokens < 10000 ? (
                   <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-6 text-center">
                     <ShieldCheck className="w-12 h-12 text-[#EF4444] mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-red-700 mb-2">Accès Refusé</h3>
-                    <p className="text-red-600 font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
+                    <h3 className="text-lg font-bold text-[#B91C1C] mb-2">Accès Refusé</h3>
+                    <p className="text-[#DC2626] font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
                   </div>
                 ) : (
                   <div className="text-left space-y-8">
@@ -746,7 +788,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
             )}
             {aviatorTab === 'safe_zone' && (
               <div className="p-4 text-center">
-                <ShieldCheck className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                <ShieldCheck className="w-12 h-12 text-[#22C55E] mx-auto mb-4" />
                 <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Safe Zone (1.5x - 2.0x)</h2>
                 <p className="text-[var(--text-secondary)]">Stratégie sécurisée pour des gains réguliers avec un risque minimal.</p>
               </div>
@@ -766,7 +808,7 @@ export default function MainApp({ user: initialUser, onLogout, onAdminAccess }: 
                 <Settings className="w-12 h-12 text-[var(--text-secondary)] mx-auto mb-4" />
                 <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Administration</h2>
                 <p className="text-[var(--text-secondary)]">Configuration de l'algorithme de prédiction (Accès restreint).</p>
-                <button onClick={() => setShowAdminModal(true)} className="mt-4 bg-[var(--input-bg)] text-white px-4 py-2 rounded-xl active:scale-95 transition-transform">Connexion Admin</button>
+                <button onClick={() => setShowAdminModal(true)} className="mt-4 bg-[var(--input-bg)] text-[var(--text-primary)] px-4 py-2 rounded-xl active:scale-95 transition-transform">Connexion Admin</button>
               </div>
             )}
           </>

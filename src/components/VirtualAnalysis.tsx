@@ -35,8 +35,8 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
     return (
       <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-6 text-center">
         <ShieldCheck className="w-12 h-12 text-[#EF4444] mx-auto mb-4" />
-        <h3 className="text-lg font-bold text-red-700 mb-2">Accès Refusé</h3>
-        <p className="text-red-600 font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
+        <h3 className="text-lg font-bold text-[#B91C1C] mb-2">Accès Refusé</h3>
+        <p className="text-[#DC2626] font-medium">Mila 10,000 tokens farafahakeliny ianao vao afaka miditra eto amin'ny VIP.</p>
       </div>
     );
   }
@@ -636,7 +636,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
   return (
     <div className="space-y-6 relative">
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-[var(--input-bg)] border border-[var(--border-color)] text-white px-4 py-3 rounded-xl active:scale-95 transition-transform shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-5">
+        <div className="fixed top-4 right-4 z-50 bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-primary)] px-4 py-3 rounded-xl active:scale-95 transition-transform shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-5">
           <div className="bg-[var(--btn-primary)]/20 p-1.5 rounded-full">
             <CheckCircle className="w-5 h-5 text-[var(--btn-primary)]" />
           </div>
@@ -663,7 +663,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
 
       <div className="bg-[var(--card-bg)] rounded-2xl theme-shadow p-4 border border-[var(--border-color)]">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-          <span className="bg-[var(--btn-primary)] text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
+          <span className="bg-[var(--btn-primary)] text-[var(--text-primary)] w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
           Historique (Texte)
         </h3>
         
@@ -688,7 +688,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
 
       <div className="bg-[var(--card-bg)] rounded-2xl theme-shadow p-4 border border-[var(--border-color)]">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-          <span className="bg-[var(--btn-primary)] text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
+          <span className="bg-[var(--btn-primary)] text-[var(--text-primary)] w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
           Nouvelle Analyse (Texte Matchs)
         </h3>
         
@@ -724,7 +724,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
           className={`w-full font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
             userTokens < 500 
               ? 'bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444]' 
-              : 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white'
+              : 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-[var(--text-primary)]'
           }`}
         >
           {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens < 500 ? null : <Search className="w-5 h-5" />}
@@ -748,7 +748,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
 
       <div className="bg-[var(--card-bg)] rounded-2xl theme-shadow p-4 border border-[var(--border-color)]">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-          <span className="bg-[var(--btn-primary)] text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
+          <span className="bg-[var(--btn-primary)] text-[var(--text-primary)] w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
           Analyse Manuelle
         </h3>
         
@@ -814,7 +814,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
           className={`w-full font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
             userTokens < 500 
               ? 'bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444]' 
-              : 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white'
+              : 'bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-[var(--text-primary)]'
           }`}
         >
           {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : userTokens < 500 ? null : <Edit3 className="w-5 h-5" />}
@@ -826,7 +826,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-bold text-[var(--text-primary)]">Résultats d'Analyse</h3>
-            <button onClick={clearResults} className="text-[#EF4444] hover:text-red-600 flex items-center gap-1 text-sm font-medium">
+            <button onClick={clearResults} className="text-[#EF4444] hover:text-[#DC2626] flex items-center gap-1 text-sm font-medium">
               <Trash2 className="w-4 h-4" /> Effacer
             </button>
           </div>
@@ -834,7 +834,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
           {/* COTES > 10 SECTION */}
           {results.some(res => res.highOdds && res.highOdds.length > 0) && (
             <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-4 shadow-sm">
-              <h4 className="font-bold text-red-600 mb-3 flex items-center gap-2">
+              <h4 className="font-bold text-[#DC2626] mb-3 flex items-center gap-2">
                 <Flame className="w-5 h-5" /> COTES PLUS DE 10 DÉTECTÉES
               </h4>
               <div className="space-y-2">
@@ -845,7 +845,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                       <span className="text-[var(--text-primary)] font-medium text-sm">{res.homeTeam} vs {res.awayTeam}</span>
                       <div className="flex gap-2">
                         {res.highOdds.map((odd, idx) => (
-                          <span key={idx} className="bg-[#EF4444] text-white font-bold px-2 py-1 rounded text-xs shadow-sm">
+                          <span key={idx} className="bg-[#EF4444] text-[var(--text-primary)] font-bold px-2 py-1 rounded text-xs shadow-sm">
                             {odd.pick}: {odd.odd.toFixed(2)}
                           </span>
                         ))}
@@ -873,7 +873,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
               return (
                 <div key={res.matchId} className={`bg-[var(--card-bg)] rounded-2xl theme-shadow overflow-hidden border border-[var(--border-color)] border-l-4 ${borderColorClass} relative animate-in fade-in duration-500`}>
                   {res.isHotMatch && (
-                    <div className="absolute top-0 right-0 bg-[#EF4444] text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1 z-10 shadow-md">
+                    <div className="absolute top-0 right-0 bg-[#EF4444] text-[var(--text-primary)] text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1 z-10 shadow-md">
                       <Flame className="w-3 h-3" /> HOT MATCH
                     </div>
                   )}
@@ -950,7 +950,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                   <div className="p-3 border-t border-[var(--border-color)] bg-[var(--tab-bg)]">
                     <button
                       onClick={() => handleCopy(res)}
-                      className="w-full py-2 rounded-xl active:scale-95 transition-transform bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-white font-bold text-sm flex items-center justify-center gap-2"
+                      className="w-full py-2 rounded-xl active:scale-95 transition-transform bg-[var(--btn-primary)] hover:bg-[var(--btn-hover)] text-[var(--text-primary)] font-bold text-sm flex items-center justify-center gap-2"
                     >
                       {copiedId === res.matchId ? (
                         <><CheckCircle className="w-4 h-4 text-[var(--text-primary)]" /> Copié !</>
@@ -966,7 +966,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
 
           {/* MULTIPLE VIP SECTION */}
           {multiples.length > 0 && (
-            <div className="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/30 rounded-xl p-4">
+            <div className="bg-gradient-to-r from-[#22C55E]/10 to-[#14B8A6]/10 border border-[#22C55E]/30 rounded-xl p-4">
               <h4 className="text-emerald-400 font-bold flex items-center gap-2 mb-3">
                 <ShieldCheck className="w-5 h-5" />
                 MULTIPLE VIP (Cote {'>'}= 10)
@@ -1007,7 +1007,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                   <div key={boost.id} className="bg-[var(--tab-bg)] p-3 rounded-xl active:scale-95 transition-transform flex flex-col gap-2 border border-[#EF4444]/20">
                     <div className="flex justify-between items-center">
                       <div>
-                        <div className="text-white font-bold text-sm">{boost.match}</div>
+                        <div className="text-[var(--text-primary)] font-bold text-sm">{boost.match}</div>
                         <div className="text-[var(--text-secondary)] text-xs">{boost.type}: <span className="text-[var(--btn-primary)] font-bold">{boost.pick}</span></div>
                       </div>
                       <div className="bg-[#EF4444]/20 text-[#EF4444] font-bold px-3 py-1 rounded border border-[#EF4444]/30">
@@ -1015,7 +1015,7 @@ export default function VirtualAnalysis({ userTokens, onAnalyze, isVip = false }
                       </div>
                     </div>
                     {boost.comment && (
-                      <div className="text-xs text-red-300/80 italic border-t border-[#EF4444]/10 pt-2 mt-1">
+                      <div className="text-xs text-[#FCA5A5]/80 italic border-t border-[#EF4444]/10 pt-2 mt-1">
                         💡 {boost.comment}
                       </div>
                     )}

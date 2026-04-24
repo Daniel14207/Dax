@@ -19,7 +19,7 @@ export function ResultHistory() {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
         <Activity className="w-12 h-12 text-[var(--text-secondary)] mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Aucun historique</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Aucun historique</h2>
         <p className="text-[var(--text-secondary)] text-sm">Vos analyses précédentes apparaîtront ici.</p>
       </div>
     );
@@ -32,7 +32,7 @@ export function ResultHistory() {
           <History className="w-6 h-6 text-[var(--btn-primary)]" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">Historique des Résultats</h2>
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">Historique des Résultats</h2>
           <p className="text-sm text-[var(--text-secondary)]">Consultez les résultats de vos matchs analysés.</p>
         </div>
       </div>
@@ -51,9 +51,9 @@ export function ResultHistory() {
 
           {/* Match Teams */}
           <div className="px-4 py-3 flex items-center justify-center gap-3">
-            <span className="font-bold text-white text-sm text-right flex-1">{result.homeTeam}</span>
+            <span className="font-bold text-[var(--text-primary)] text-sm text-right flex-1">{result.homeTeam}</span>
             <span className="text-[10px] font-black text-[var(--text-secondary)] bg-[var(--input-bg)] px-2 py-0.5 rounded-full">VS</span>
-            <span className="font-bold text-white text-sm text-left flex-1">{result.awayTeam}</span>
+            <span className="font-bold text-[var(--text-primary)] text-sm text-left flex-1">{result.awayTeam}</span>
           </div>
 
           {/* Odds */}
@@ -65,15 +65,15 @@ export function ResultHistory() {
             <div className="flex gap-2">
               <div className="flex-1 bg-[var(--tab-bg)] rounded-xl active:scale-95 transition-transform p-2 flex justify-between items-center border border-[var(--border-color)]/50">
                 <span className="text-[10px] text-[var(--text-secondary)] font-bold">1</span>
-                <span className="text-xs font-bold text-white">{result.extractedOdds?.home?.toFixed(2) || '-'}</span>
+                <span className="text-xs font-bold text-[var(--text-primary)]">{result.extractedOdds?.home?.toFixed(2) || '-'}</span>
               </div>
               <div className="flex-1 bg-[var(--tab-bg)] rounded-xl active:scale-95 transition-transform p-2 flex justify-between items-center border border-[var(--border-color)]/50">
                 <span className="text-[10px] text-[var(--text-secondary)] font-bold">X</span>
-                <span className="text-xs font-bold text-white">{result.extractedOdds?.draw?.toFixed(2) || '-'}</span>
+                <span className="text-xs font-bold text-[var(--text-primary)]">{result.extractedOdds?.draw?.toFixed(2) || '-'}</span>
               </div>
               <div className="flex-1 bg-[var(--tab-bg)] rounded-xl active:scale-95 transition-transform p-2 flex justify-between items-center border border-[var(--border-color)]/50">
                 <span className="text-[10px] text-[var(--text-secondary)] font-bold">2</span>
-                <span className="text-xs font-bold text-white">{result.extractedOdds?.away?.toFixed(2) || '-'}</span>
+                <span className="text-xs font-bold text-[var(--text-primary)]">{result.extractedOdds?.away?.toFixed(2) || '-'}</span>
               </div>
             </div>
           </div>
@@ -86,7 +86,7 @@ export function ResultHistory() {
                   <CheckCircle className="w-3.5 h-3.5 text-[var(--btn-primary)]" />
                   <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Pronostic</span>
                 </div>
-                <div className="text-lg font-black text-white bg-[var(--btn-primary)]/10 px-3 py-1 rounded-xl active:scale-95 transition-transform border border-[var(--input-focus)]/20 inline-block">
+                <div className="text-lg font-black text-[var(--text-primary)] bg-[var(--btn-primary)]/10 px-3 py-1 rounded-xl active:scale-95 transition-transform border border-[var(--input-focus)]/20 inline-block">
                   {result.results?.ft1x2 || '-'}
                 </div>
               </div>
